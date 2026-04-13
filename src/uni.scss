@@ -1,0 +1,76 @@
+/**
+ * These are the built-in common style variables for uni-app
+ *
+ * Many third-party plugins on the official uni-app extension/plugin marketplace (https://ext.dcloud.net.cn) use these style variables
+ * If you are a plugin author, it is recommended to use SCSS preprocessing and reference these variables directly in plugin code (without importing this file) so users can build a visually consistent app
+ *
+ */
+
+/**
+ * If you are an app developer (plugin user), you can customize the plugin theme by overriding these variables
+ *
+ * If your project also uses SCSS preprocessing, you can use the following variables directly in your SCSS without importing this file
+ */
+
+/* Color variables */
+
+/* Action-related colors */
+$uni-color-primary: #007aff;
+$uni-color-success: #4cd964;
+$uni-color-warning: #f0ad4e;
+$uni-color-error: #dd524d;
+
+/* Base text colors */
+$uni-text-color: #333; // Base text color
+$uni-text-color-inverse: #fff; // Inverse text color
+$uni-text-color-grey: #999; // Auxiliary gray, e.g. load-more hint text
+$uni-text-color-placeholder: #808080;
+$uni-text-color-disable: #c0c0c0;
+
+/* Background colors */
+$uni-bg-color: #fff;
+$uni-bg-color-grey: #f8f8f8;
+$uni-bg-color-hover: #f1f1f1; // Pressed-state color
+$uni-bg-color-mask: rgb(0 0 0 / 40%); // Mask color
+
+/* Border colors */
+$uni-border-color: #c8c7cc;
+
+/* Size variables */
+
+/* Font sizes */
+$uni-font-size-sm: 12px;
+$uni-font-size-base: 14px;
+$uni-font-size-lg: 16;
+
+/* Image sizes */
+$uni-img-size-sm: 20px;
+$uni-img-size-base: 26px;
+$uni-img-size-lg: 40px;
+
+/* Border Radius */
+$uni-border-radius-sm: 2px;
+$uni-border-radius-base: 3px;
+$uni-border-radius-lg: 6px;
+$uni-border-radius-circle: 50%;
+
+/* Horizontal spacing */
+$uni-spacing-row-sm: 5px;
+$uni-spacing-row-base: 10px;
+$uni-spacing-row-lg: 15px;
+
+/* Vertical spacing */
+$uni-spacing-col-sm: 4px;
+$uni-spacing-col-base: 8px;
+$uni-spacing-col-lg: 12px;
+
+/* Opacity */
+$uni-opacity-disabled: 0.3; // Opacity for disabled component state
+
+/* Article-related settings */
+$uni-color-title: #2c405a; // Article title color
+$uni-font-size-title: 20px;
+$uni-color-subtitle: #555; // Article subtitle color
+$uni-font-size-subtitle: 18px;
+$uni-color-paragraph: #3f536e; // Article paragraph color
+$uni-font-size-paragraph: 15px;

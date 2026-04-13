@@ -1,0 +1,62 @@
+{
+  "app": {
+    "name": "Halo 小程序",
+    "logo": "/static/logo.png",
+    "version": "1.0.0",
+    "brandDescription": "Halo 商城是一个专注于品质生活的电商平台，致力于为用户提供优质的商品和服务体验。我们汇聚了众多知名品牌和独立设计师，覆盖服饰、家居、美妆、数码等多个品类，助力每位用户找到心仪好物。"
+  },
+  "halo": {
+    "baseURL": "http://localhost:8090",
+    "timeout": 10000
+  },
+  "auth": {
+    "loginMethods": {
+      "primary": "phoneQuick",
+      "supported": ["phoneQuick", "phoneCode", "email", "haloAccount", "haloPat"]
+    }
+  },
+  "dev": {
+    "basicAuth": {
+      "username": "",
+      "password": ""
+    }
+  },
+  "business": {
+    "currencySymbol": "¥",
+    "maxCartItems": 99,
+    "contactServiceEnabled": true,
+    "legalDocuments": {
+      "userAgreement": "",
+      "privacyPolicy": "",
+      "paymentAgreement": "",
+      "platformRules": "",
+      "qualification": ""
+    },
+    "helpCenterFaqs": [
+      {
+        "question": "如何修改收货地址？",
+        "answer": "如果订单尚未发货，您可以在\"订单详情\"页面点击\"修改地址\"。若已发货，请联系在线客服协助处理。"
+      },
+      {
+        "question": "退款一般多久到账？",
+        "answer": "退款将在申请审核通过后 1-7 个工作日内退回到您的原支付账户，具体到账时间以银行处理时间为准。"
+      },
+      {
+        "question": "优惠券使用后订单取消会返还吗？",
+        "answer": "订单取消后，使用的优惠券将在 24 小时内返还到您的账户，请在\"优惠券\"页面查看。"
+      },
+      {
+        "question": "如何申请开具增值税专用发票？",
+        "answer": "您可以在订单完成后 90 天内，在\"订单详情\"页面申请开具发票，填写相关税务信息即可。"
+      },
+      {
+        "question": "如何申请退货退款？",
+        "answer": "在\"我的订单\"中找到对应订单，点击\"申请售后\"，选择退货退款并填写原因，等待卖家审核处理。"
+      },
+      {
+        "question": "商品质量问题怎么处理？",
+        "answer": "如收到商品存在质量问题，请在签收 7 天内联系客服或申请售后，我们将为您安排退换货处理。"
+      }
+    ]
+  }
+}
