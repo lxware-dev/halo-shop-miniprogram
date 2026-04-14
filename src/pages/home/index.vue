@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { onReachBottom } from '@dcloudio/uni-app';
+import { onLoad, onReachBottom, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
 import AppTabBar from '@/components/common/AppTabBar.vue';
 import AppLoading from '@/components/common/AppLoading.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
 import AppListFooter from '@/components/common/AppListFooter.vue';
 import ProductCard from '@/components/business/ProductCard.vue';
+import { useAppConfig } from '@/config';
 import { useFetch, useInfiniteQuery } from '@/hooks/useRequest';
 import { useSmoothLoading } from '@/hooks/useSmoothLoading';
+import { usePageShare } from '@/hooks/usePageShare';
 import { usePagePullRefresh } from '@/hooks/usePullRefresh';
 import { homeApi } from '@/api/modules/home';
 import type { ProductResponse, Banner, QuickEntry } from '@halo-dev/api-client';
@@ -16,7 +18,7 @@ import { useMenuButton } from '@/composables/useMenuButton';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { navigateToPage as authNavigateToPage } from '@/helpers/auth';
 import { useCart } from '@/hooks/useCart';
-import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { formatImageUrlWithThumbnail, formatShareImageUrl } from '@/helpers/image';
 import { ICON_COLOR } from '@/helpers/icon';
 import { isExternalProduct, openExternalProduct } from '@/helpers/product';
 import { useTabBar } from '@/composables/useTabBar';
@@ -24,10 +26,21 @@ import { useTabBar } from '@/composables/useTabBar';
 const BACKEND_FIRST_PAGE = 1;
 const MAX_QUICK_ENTRIES = 8;
 const systemInfo = uni.getSystemInfoSync();
+const appConfig = useAppConfig();
 const { width } = useMenuButton();
 const { totalHeight } = useTabBar();
 const { addToCart } = useCart();
 const contentPaddingBottom = computed(() => `${totalHeight + 8}px`);
+
+function truncateShareText(text: string, maxLength: number) {
+  const normalizedText = text.trim();
+  if (!normalizedText) {
+    return '';
+  }
+  return normalizedText.length > maxLength
+    ? `${normalizedText.slice(0, Math.max(maxLength - 1, 1))}…`
+    : normalizedText;
+}
 
 const statusBarStyle = computed(() => {
   return {
@@ -98,6 +111,45 @@ const hasProductItems = computed(() => productItems.value.length > 0);
 const productTotal = computed(() => productItems.value.length);
 const isProductsLoadingMore = computed(() => loadingMore.value);
 const showProductsLoading = useSmoothLoading(productsLoading, { delay: 120, minDuration: 180 });
+const primaryBanner = computed(() => banners.value[0] ?? null);
+const primaryShareProduct = computed(() => productItems.value[0] ?? null);
+
+function resolveHomeShareTitle() {
+  const bannerTitle = primaryBanner.value?.title?.trim();
+  const bannerDescription = primaryBanner.value?.description?.trim();
+  if (bannerTitle && bannerDescription) {
+    return `${truncateShareText(bannerTitle, 12)} | ${truncateShareText(bannerDescription, 12)}`;
+  }
+  if (bannerTitle) {
+    return truncateShareText(bannerTitle, 24);
+  }
+  const brandDescription = truncateShareText(appConfig.app.brandDescription ?? '', 18);
+  return brandDescription ? `${appConfig.app.name} | ${brandDescription}` : appConfig.app.name;
+}
+
+function resolveHomeShareImage() {
+  if (primaryBanner.value?.imageUrl) {
+    return formatImageUrlWithThumbnail(primaryBanner.value.imageUrl, 'L');
+  }
+  if (primaryShareProduct.value?.coverImageUrl) {
+    return formatImageUrlWithThumbnail(primaryShareProduct.value.coverImageUrl, 'L');
+  }
+  return formatShareImageUrl(appConfig.app.logo);
+}
+
+const { showShareMenu, createShareAppMessage, createShareTimeline } = usePageShare(() => ({
+  title: resolveHomeShareTitle(),
+  path: '/pages/home/index',
+  imageUrl: resolveHomeShareImage(),
+}));
+
+onLoad(() => {
+  showShareMenu();
+});
+
+onShareAppMessage(() => createShareAppMessage());
+
+onShareTimeline(() => createShareTimeline());
 
 onMounted(() => {
   runProducts({});

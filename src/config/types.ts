@@ -4,10 +4,9 @@
  * - `phoneQuick`：手机号一键登录，仅微信小程序可用
  * - `phoneCode`：手机号 + 短信验证码登录
  * - `email`：邮箱 + 验证码登录
- * - `haloAccount`：Halo 账号密码登录
- * - `haloPat`：Halo Personal Access Token 登录
+ * - `haloAccount`：账号密码登录
  */
-export type LoginMethod = 'phoneQuick' | 'phoneCode' | 'email' | 'haloAccount' | 'haloPat';
+export type LoginMethod = 'phoneQuick' | 'phoneCode' | 'email' | 'haloAccount';
 
 /**
  * 每个 key 对应一个外部链接，页面会通过内置 WebView 打开。

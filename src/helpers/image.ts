@@ -39,6 +39,21 @@ export function formatImageUrl(url: string | null | undefined): string {
 }
 
 /**
+ * Format share image URL.
+ * Static assets under `/static` should stay as local paths,
+ * while other resources follow the normal image URL formatting rules.
+ */
+export function formatShareImageUrl(url: string | null | undefined): string {
+  if (!url) {
+    return '';
+  }
+  if (url.startsWith('/static/') || url.startsWith('static/')) {
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+  return formatImageUrl(url);
+}
+
+/**
  * Mapping of thumbnail size enums to their corresponding widths in pixels
  *
  * @remarks

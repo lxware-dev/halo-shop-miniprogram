@@ -52,7 +52,7 @@ async function submit() {
       <input
         v-model="username"
         class="flex-1 h-full text-sm text-slate-950 bg-transparent"
-        placeholder="输入 Halo 账号"
+        placeholder="输入账号"
         placeholder-style="color: #94a3b8"
         type="text"
       />

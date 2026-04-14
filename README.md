@@ -46,7 +46,7 @@ pnpm dev:mp-weixin
   "auth": {
     "loginMethods": {
       "primary": "phoneQuick",
-      "supported": ["phoneQuick", "phoneCode", "email", "haloAccount", "haloPat"]
+      "supported": ["phoneQuick", "phoneCode", "email", "haloAccount"]
     }
   },
   "dev": {
@@ -90,8 +90,7 @@ pnpm dev:mp-weixin
 | `phoneQuick`  | 手机号一键登录（微信快速获取手机号，仅 `MP-WEIXIN` 可用） |
 | `phoneCode`   | 手机号 + 短信验证码                                       |
 | `email`       | 邮箱 + 验证码                                             |
-| `haloAccount` | Halo 账号密码                                             |
-| `haloPat`     | Halo Personal Access Token                                |
+| `haloAccount` | 账号密码登录                                              |
 
 #### `dev` — 开发调试配置
 

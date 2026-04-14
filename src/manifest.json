@@ -1,8 +1,8 @@
 {
-  "name": "halo-shop-miniprogram-test",
-  "appid": "",
-  "description": "halo-shop-miniprogram-test",
-  "versionName": "1.0.0",
+  "name": "halo-shop-miniprogram",
+  "appid": "wx2408a8718327a483",
+  "description": "飞致云周边商城 - 凌霞软件",
+  "versionName": "1.0.1",
   "versionCode": "100",
   "transformPx": false,
   "uniStatistics": {
@@ -56,7 +56,7 @@
     "usingComponents": true,
     "permission": {
       "scope.address": {
-        "desc": "用于填写收货地址"
+        "desc": "用于一键填写收货地址"
       }
     }
   },

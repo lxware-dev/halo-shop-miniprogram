@@ -5,7 +5,6 @@ import type {
   PhoneCodeLoginRequest,
   EmailLoginRequest,
   HaloAccountLoginRequest,
-  HaloPatLoginRequest,
   SendCodeRequest,
 } from '@/types/auth';
 import { getPlatform } from '@/helpers/platform';
@@ -63,20 +62,10 @@ export const authApi = {
     }),
 
   /**
-   * Halo account/password login
+   * Account/password login
    */
   loginByHaloAccount: (params: HaloAccountLoginRequest) =>
     api.Post<LoginResult>(`/login/mp/${platform}/username`, params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }),
-
-  /**
-   * Halo PAT login
-   */
-  loginByHaloPat: (params: HaloPatLoginRequest) =>
-    api.Post<LoginResult>(`/login/mp/${platform}/pat`, params, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },

@@ -7,7 +7,9 @@
         "navigationBarBackgroundColor": "#FFFFFF",
         "navigationBarTextStyle": "black",
         "navigationStyle": "custom",
-        "enablePullDownRefresh": true
+        "enablePullDownRefresh": true,
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
       }
     },
     {
@@ -82,7 +84,9 @@
           "style": {
             "navigationBarTitleText": "商品详情",
             "navigationBarBackgroundColor": "#FFFFFF",
-            "navigationBarTextStyle": "black"
+            "navigationBarTextStyle": "black",
+            "enableShareAppMessage": true,
+            "enableShareTimeline": true
           }
         },
         {

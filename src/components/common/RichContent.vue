@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { htmlToContentBlocks } from '@/utils/rich-text';
+import { formatImageUrl } from '@/helpers/image';
 
 const props = defineProps<{
   html: string;
@@ -19,9 +20,11 @@ function previewImage(src: string) {
   if (!allImages.value.length) {
     return;
   }
+  const urls = allImages.value.map((img) => formatImageUrl(img));
+  const current = formatImageUrl(src);
   uni.previewImage({
-    urls: allImages.value,
-    current: src,
+    urls,
+    current,
   });
 }
 </script>

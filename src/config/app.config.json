@@ -12,7 +12,7 @@
   "auth": {
     "loginMethods": {
       "primary": "phoneQuick",
-      "supported": ["phoneQuick", "phoneCode", "email", "haloAccount", "haloPat"]
+      "supported": ["phoneCode", "email", "haloAccount"]
     }
   },
   "dev": {

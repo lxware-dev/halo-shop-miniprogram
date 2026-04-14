@@ -44,15 +44,10 @@ export interface EmailLoginRequest {
   code: string;
 }
 
-/** Halo account/password login request */
+/** Account/password login request */
 export interface HaloAccountLoginRequest {
   username: string;
   password: string;
-}
-
-/** Halo PAT login request */
-export interface HaloPatLoginRequest {
-  pat: string;
 }
 
 /** Send verification code request */

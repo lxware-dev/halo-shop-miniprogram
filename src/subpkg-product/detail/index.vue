@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
 import AppContactButton from '@/components/common/AppContactButton.vue';
@@ -10,6 +10,7 @@ import { useAppConfig } from '@/config';
 import { ICON_COLOR } from '@/helpers/icon';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
+import { usePageShare } from '@/hooks/usePageShare';
 import { useQuery } from '@/hooks/useRequest';
 import SkuSelector from '@/components/business/SkuSelector.vue';
 import type {
@@ -17,21 +18,25 @@ import type {
   ProductVariantResponse,
   SpecDefinitionPayload,
 } from '@halo-dev/api-client';
-import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { formatImageUrl, formatImageUrlWithThumbnail, formatShareImageUrl } from '@/helpers/image';
 import {
   isExternalProduct as checkIsExternalProduct,
   openExternalProduct,
 } from '@/helpers/product';
 
 const productId = ref<number>(0);
-const { contactServiceEnabled } = useAppConfig().business;
+const appConfig = useAppConfig();
+const { contactServiceEnabled } = appConfig.business;
 
-onLoad((options) => {
-  if (options?.id) {
-    productId.value = Number(options.id);
-    loadProduct();
+function truncateShareText(text: string, maxLength: number) {
+  const normalizedText = text.trim();
+  if (!normalizedText) {
+    return '';
   }
-});
+  return normalizedText.length > maxLength
+    ? `${normalizedText.slice(0, Math.max(maxLength - 1, 1))}…`
+    : normalizedText;
+}
 
 const {
   data: product,
@@ -170,6 +175,50 @@ const imageList = computed(() => {
   return imgs;
 });
 
+function resolveProductShareTitle() {
+  const productTitle = product.value?.title?.trim();
+  const priceText = displayPrice.value !== '0.00' ? `¥${displayPrice.value}` : '';
+  if (productTitle && priceText) {
+    return `${truncateShareText(productTitle, 18)} | ${priceText}`;
+  }
+  if (productTitle) {
+    const productDescription = truncateShareText(product.value?.description ?? '', 12);
+    return productDescription
+      ? `${truncateShareText(productTitle, 14)} | ${productDescription}`
+      : productTitle;
+  }
+  return appConfig.app.name;
+}
+
+function resolveProductShareImage() {
+  const productImage = product.value?.coverImageUrl || imageList.value[0];
+  if (productImage) {
+    return formatImageUrlWithThumbnail(productImage, 'L');
+  }
+  return formatShareImageUrl(appConfig.app.logo);
+}
+
+const { showShareMenu, createShareAppMessage, createShareTimeline } = usePageShare(() => ({
+  title: resolveProductShareTitle(),
+  path: productId.value
+    ? `/subpkg-product/detail/index?id=${productId.value}`
+    : '/pages/home/index',
+  query: productId.value ? `id=${productId.value}` : '',
+  imageUrl: resolveProductShareImage(),
+}));
+
+onLoad((options) => {
+  showShareMenu();
+  if (options?.id) {
+    productId.value = Number(options.id);
+    loadProduct();
+  }
+});
+
+onShareAppMessage(() => createShareAppMessage());
+
+onShareTimeline(() => createShareTimeline());
+
 const currentImage = ref(0);
 /**
  * Text description of selected specs (used for list rows)
@@ -261,7 +310,7 @@ function handleBuyNow() {
 }
 
 function previewImage(index: number) {
-  const urls = imageList.value;
+  const urls = imageList.value.map((img) => formatImageUrl(img));
   if (!urls.length) {
     return;
   }

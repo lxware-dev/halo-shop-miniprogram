@@ -107,16 +107,10 @@ export default defineMock({
   '[POST]/login/mp/{platform}/email': () => mockTokenResult(),
 
   /**
-   * Halo account/password login
+   * Account/password login
    * POST /login/mp/{platform}/username
    */
   '[POST]/login/mp/{platform}/username': () => mockTokenResult(),
-
-  /**
-   * Halo PAT login
-   * POST /login/mp/{platform}/pat
-   */
-  '[POST]/login/mp/{platform}/pat': () => mockTokenResult(),
 
   /**
    * Send verification code (SMS or email)

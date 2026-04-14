@@ -433,7 +433,7 @@ function goToProduct(product: ProductResponse | undefined) {
 
     <view class="flex-1" :style="`padding-bottom: ${listPaddingBottom}`">
       <view v-if="showLoginPanel" class="bg-white min-h-full">
-        <LoginPanel mode="page" @success="handleLoginSuccess" />
+        <LoginPanel mode="page" :page-offset-bottom="totalHeight" @success="handleLoginSuccess" />
       </view>
 
       <view v-else-if="showInitialLoading" class="flex justify-center px-4 py-10">
