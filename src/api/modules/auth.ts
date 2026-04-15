@@ -1,7 +1,6 @@
 import { alovaInst } from '@/utils/request';
 import type {
   LoginResult,
-  PhoneQuickLoginRequest,
   PhoneCodeLoginRequest,
   EmailLoginRequest,
   HaloAccountLoginRequest,
@@ -34,12 +33,16 @@ export const authApi = {
    * One-tap phone login (WeChat quick phone-number component, MP-WEIXIN only)
    * phoneCode comes from the WeChat getPhoneNumber callback; the request only needs the current token
    */
-  loginByPhoneQuick: (params: PhoneQuickLoginRequest) =>
-    api.Post<LoginResult>(`/login/mp/${platform}/phone-quick`, params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+  loginByPhoneQuick: (code: string) =>
+    api.Post<LoginResult>(
+      `/login/mp/${platform}/phone-quick`,
+      { code },
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       },
-    }),
+    ),
 
   /**
    * Phone number + SMS verification code login

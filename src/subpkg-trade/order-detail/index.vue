@@ -12,7 +12,6 @@ import { formatPrice, formatDate, maskPhone, joinName } from '@/utils/format';
 import {
   getOrderStatusInfo,
   canPayNow,
-  canCancelOrder,
   canViewLogistics,
   canConfirmReceive,
   canBuyAgain,
@@ -138,7 +137,7 @@ function getItemSpecText(item: OrderItemResponse): string {
 const showPayNow = computed(() => !!order.value && canPayNow(order.value));
 const showConfirmReceive = computed(() => !!order.value && canConfirmReceive(order.value));
 const showViewLogistics = computed(() => !!order.value && canViewLogistics(order.value));
-const showCancelOrder = computed(() => !!order.value && canCancelOrder(order.value));
+// const showCancelOrder = computed(() => !!order.value && canCancelOrder(order.value));
 const showBuyAgain = computed(() => !!order.value && canBuyAgain(order.value));
 
 function onPayNow() {
@@ -167,17 +166,17 @@ function onViewLogistics() {
   uni.navigateTo({ url: `/subpkg-trade/logistics/index?orderCode=${orderCode.value}` });
 }
 
-function onCancelOrder() {
-  uni.showModal({
-    title: '取消订单',
-    content: '确认要取消该订单吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
-      }
-    },
-  });
-}
+// function onCancelOrder() {
+//   uni.showModal({
+//     title: '取消订单',
+//     content: '确认要取消该订单吗？',
+//     success: (res) => {
+//       if (res.confirm) {
+//         uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
+//       }
+//     },
+//   });
+// }
 
 const { addOrderItemsToCart, goToCart } = useCart();
 const buyingAgain = ref(false);
@@ -439,13 +438,14 @@ function onCopyOrderCode() {
     v-if="order"
     class="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-end gap-3 px-4 pt-4 bg-white/90 border-t border-t-solid border-t-brand/10 shadow-up backdrop-blur-md pb-safe-sm"
   >
-    <view
+    <!-- TODO: 取消订单功能暂未开放 -->
+    <!-- <view
       v-if="showCancelOrder"
       class="px-4 py-2.5 rounded-1.5 border border-solid border-slate-200"
       @tap="onCancelOrder"
     >
       <text class="text-sm text-slate-500 font-medium">取消订单</text>
-    </view>
+    </view> -->
 
     <view
       v-if="showPayNow"

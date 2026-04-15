@@ -24,14 +24,6 @@ export interface LoginResult {
   expiresAt?: string;
 }
 
-/** One-tap phone login request (WeChat quick phone-number retrieval) */
-export interface PhoneQuickLoginRequest {
-  /** Code returned by WeChat getPhoneNumber */
-  phoneCode: string;
-  /** Current platform, such as mp-weixin */
-  platform: string;
-}
-
 /** Phone number + SMS verification code login request */
 export interface PhoneCodeLoginRequest {
   phone: string;

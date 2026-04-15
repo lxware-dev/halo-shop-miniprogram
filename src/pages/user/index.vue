@@ -43,10 +43,9 @@ const displayName = computed(
   () => user.value?.spec?.displayName ?? (isLoggedIn.value ? '用户' : '未登录'),
 );
 
-// Display the first 8 characters of the UUID
 const userId = computed(() => {
   const name = user.value?.metadata?.name ?? '';
-  return name.length > 8 ? name.slice(0, 8).toUpperCase() : name.toUpperCase();
+  return name.length > 20 ? `${name.slice(0, 20)}...` : name;
 });
 
 const userAvatar = computed(() => user.value?.spec?.avatar ?? '');
@@ -139,7 +138,7 @@ function onViewAllOrders() {
             </text>
             <view class="flex items-center gap-1">
               <view class="flex items-center px-1.5 py-0.5 rounded-full bg-white/18">
-                <text class="text-white/90 text-2.5 tracking-[0.5rpx]"> UID · {{ userId }} </text>
+                <text class="text-white/90 text-2.5 tracking-[0.5rpx]"> uid · {{ userId }} </text>
               </view>
             </view>
           </template>

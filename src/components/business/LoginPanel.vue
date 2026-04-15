@@ -188,9 +188,6 @@ async function handleLoginResult(result: any) {
   emit('success');
 }
 
-const systemInfo = uni.getSystemInfoSync();
-const uniPlatform = systemInfo.uniPlatform ?? '';
-
 async function handlePhoneQuickResult(e: any) {
   if (!agreed.value) {
     uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
@@ -206,12 +203,7 @@ async function handlePhoneQuickResult(e: any) {
   }
   boundLoading.value = true;
   try {
-    const result = await sendRequest(
-      authApi.loginByPhoneQuick({
-        phoneCode,
-        platform: uniPlatform,
-      }),
-    );
+    const result = await sendRequest(authApi.loginByPhoneQuick(phoneCode));
     await handleLoginResult(result);
   } catch {
     uni.showToast({ title: '登录失败，请稍后重试', icon: 'none' });
@@ -355,9 +347,9 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
           >
             <view
               class="w-full flex items-center justify-center gap-2 rounded-full py-4"
-              :class="agreed ? 'bg-brand' : 'bg-transparent'"
+              :class="agreed ? 'bg-brand' : 'bg-brand-muted'"
             >
-              <text class="text-base font-bold" :class="agreed ? 'text-white' : 'text-slate-300'">
+              <text class="text-base font-bold text-white">
                 {{ methodMeta[loginMethods.primary].label }}
               </text>
             </view>
@@ -368,7 +360,7 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
             v-if="loginMethods.primary === 'phoneQuick'"
             class="w-full flex items-center justify-center gap-2 rounded-full py-4 bg-brand-muted"
           >
-            <text class="text-white text-base font-bold">手机号一键登录（仅微信可用）</text>
+            <text class="text-white text-base font-bold">手机号一键登录</text>
           </view>
           <!-- #endif -->
           <view

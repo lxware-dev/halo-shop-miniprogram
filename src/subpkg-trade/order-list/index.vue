@@ -16,7 +16,6 @@ import { getPageResponseHasMore } from '@/utils/page';
 import {
   getOrderStatusInfo,
   canPayNow,
-  canCancelOrder,
   canViewLogistics,
   canConfirmReceive,
   canBuyAgain,
@@ -161,17 +160,17 @@ function onGoDetail(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/order-detail/index?orderCode=${order.orderCode}` });
 }
 
-function onCancelOrder(_order: OrderResponse) {
-  uni.showModal({
-    title: '取消订单',
-    content: '确认要取消该订单吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
-      }
-    },
-  });
-}
+// function onCancelOrder(_order: OrderResponse) {
+//   uni.showModal({
+//     title: '取消订单',
+//     content: '确认要取消该订单吗？',
+//     success: (res) => {
+//       if (res.confirm) {
+//         uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
+//       }
+//     },
+//   });
+// }
 
 function onPayNow(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${order.orderCode}` });
@@ -233,7 +232,7 @@ async function onBuyAgain(order: OrderResponse) {
   }
 }
 
-const showCancel = canCancelOrder;
+// const showCancel = canCancelOrder;
 const showPayNow = canPayNow;
 const showViewLogistics = canViewLogistics;
 const showConfirmReceive = canConfirmReceive;
@@ -382,13 +381,14 @@ function goShopping() {
           </text>
 
           <view class="flex items-center gap-2">
-            <view
+            <!-- TODO: 取消订单功能暂未开放 -->
+            <!-- <view
               v-if="showCancel(order)"
               class="flex items-center py-2 px-3.5 py-1.5 rounded-full border border-solid border-slate-200"
               @tap.stop="onCancelOrder(order)"
             >
               <text class="text-xs text-slate-950">取消订单</text>
-            </view>
+            </view> -->
 
             <view
               v-if="showPayNow(order)"
