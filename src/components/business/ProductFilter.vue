@@ -112,7 +112,7 @@ function toggleGroup(key: string) {
       <view
         class="flex items-center justify-between px-4 py-3.5 shrink-0 border-b border-b-solid border-b-slate-100"
       >
-        <text class="text-slate-950 text-base font-medium">筛选</text>
+        <text class="text-slate-950 text-base font-medium">{{ $t('list.filter') }}</text>
         <view class="p-1" @tap="close">
           <TIcon name="close" v-bind="{ size: '46rpx', color: '#94a3b8' }" />
         </view>
@@ -170,7 +170,7 @@ function toggleGroup(key: string) {
 
           <view class="flex items-center justify-between px-4 py-3 bg-slate-50 mt-2">
             <view class="flex items-center gap-1.5">
-              <text class="text-slate-950 text-sm font-medium">价格区间（元）</text>
+              <text class="text-slate-950 text-sm font-medium">{{ $t('filter.priceRange') }}</text>
               <view
                 v-if="minPriceInput || maxPriceInput"
                 class="w-1.5 h-1.5 rounded-full bg-brand"
@@ -183,7 +183,7 @@ function toggleGroup(key: string) {
               <input
                 v-model="minPriceInput"
                 type="digit"
-                placeholder="最低价"
+                :placeholder="$t('filter.minPrice')"
                 placeholder-style="color: #94a3b8; font-size: 28rpx"
                 class="h-9 flex-1 text-sm text-slate-950 bg-transparent"
               />
@@ -195,7 +195,7 @@ function toggleGroup(key: string) {
               <input
                 v-model="maxPriceInput"
                 type="digit"
-                placeholder="最高价"
+                :placeholder="$t('filter.maxPrice')"
                 placeholder-style="color: #94a3b8; font-size: 28rpx"
                 class="h-9 flex-1 text-sm text-slate-950 bg-transparent"
               />
@@ -211,14 +211,14 @@ function toggleGroup(key: string) {
           class="w-22.5 h-12.5 flex items-center justify-center rounded-2 border border-solid border-slate-200 shrink-0"
           @tap="reset"
         >
-          <text class="text-slate-600 text-base font-medium">重置</text>
+          <text class="text-slate-600 text-base font-medium">{{ $t('filter.reset') }}</text>
         </view>
 
         <view
           class="flex flex-1 items-center justify-center bg-brand rounded-2 h-12.5 shadow-brand-btn"
           @tap="confirm"
         >
-          <text class="text-white text-base font-medium">确定</text>
+          <text class="text-white text-base font-medium">{{ $t('filter.confirm') }}</text>
         </view>
       </view>
     </view>

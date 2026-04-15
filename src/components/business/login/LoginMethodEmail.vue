@@ -5,9 +5,11 @@ import { ICON_COLOR } from '@/helpers/icon';
 import { authApi } from '@/api';
 import { sendRequest } from '@/hooks/useRequest';
 import type { LoginMethodProps, LoginMethodEmits } from '@/types/auth';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<LoginMethodProps>();
 const emit = defineEmits<LoginMethodEmits>();
+const { t } = useI18n();
 
 const email = ref('');
 const code = ref('');
@@ -34,7 +36,7 @@ function startCountdown() {
 
 async function sendCode() {
   if (!email.value.trim()) {
-    uni.showToast({ title: '请输入邮箱', icon: 'none' });
+    uni.showToast({ title: t('login.enterEmail'), icon: 'none' });
     return;
   }
   if (countdown.value > 0) {
@@ -43,23 +45,23 @@ async function sendCode() {
   try {
     await sendRequest(authApi.sendCode({ target: email.value.trim(), type: 'email' }));
     startCountdown();
-    uni.showToast({ title: '验证码已发送', icon: 'success' });
+    uni.showToast({ title: t('login.codeSent'), icon: 'success' });
   } catch {
-    uni.showToast({ title: '发送验证码失败，请稍后重试', icon: 'none' });
+    uni.showToast({ title: t('login.codeSendFailed'), icon: 'none' });
   }
 }
 
 async function submit() {
   if (!props.agreed) {
-    uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
     return;
   }
   if (!email.value.trim()) {
-    uni.showToast({ title: '请输入邮箱', icon: 'none' });
+    uni.showToast({ title: t('login.enterEmail'), icon: 'none' });
     return;
   }
   if (!code.value.trim()) {
-    uni.showToast({ title: '请输入验证码', icon: 'none' });
+    uni.showToast({ title: t('login.enterCode'), icon: 'none' });
     return;
   }
   loading.value = true;
@@ -72,7 +74,7 @@ async function submit() {
     );
     emit('success', result);
   } catch {
-    uni.showToast({ title: '登录失败，请稍后重试', icon: 'none' });
+    uni.showToast({ title: t('login.failed'), icon: 'none' });
   } finally {
     loading.value = false;
   }
@@ -88,7 +90,7 @@ async function submit() {
       <input
         v-model="email"
         class="flex-1 h-full text-sm text-slate-950 bg-transparent"
-        placeholder="输入邮箱地址"
+        :placeholder="t('login.inputEmail')"
         placeholder-style="color: #94a3b8"
         type="text"
       />
@@ -100,7 +102,7 @@ async function submit() {
       <input
         v-model="code"
         class="flex-1 h-full text-sm text-slate-950 bg-transparent"
-        placeholder="输入邮箱验证码"
+        :placeholder="t('login.inputEmailCode')"
         placeholder-style="color: #94a3b8"
         type="number"
         :maxlength="6"
@@ -110,7 +112,7 @@ async function submit() {
         :class="countdown > 0 ? 'text-slate-400' : 'text-brand'"
         @tap="sendCode"
       >
-        {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+        {{ countdown > 0 ? `${countdown}s` : t('login.getCode') }}
       </view>
     </view>
     <view
@@ -119,7 +121,9 @@ async function submit() {
       :style="{ opacity: loading ? '0.7' : '1' }"
       @tap="submit"
     >
-      <text class="text-white text-base font-bold">{{ loading ? '登录中…' : '登录' }}</text>
+      <text class="text-white text-base font-bold">
+        {{ loading ? t('login.loggingIn') : t('login.submit') }}
+      </text>
     </view>
   </view>
 </template>

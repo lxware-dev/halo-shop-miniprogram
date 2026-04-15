@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useI18n } from 'vue-i18n';
 import AppContactButton from '@/components/common/AppContactButton.vue';
 import { logisticsApi } from '@/api/modules/logistics';
 import { useAppConfig } from '@/config';
@@ -11,6 +12,7 @@ import { formatImageUrlWithThumbnail } from '@/helpers/image';
 
 const { contactServiceEnabled } = useAppConfig().business;
 const orderCode = ref('');
+const { t } = useI18n();
 const {
   data: logistics,
   loading,
@@ -34,16 +36,18 @@ onLoad(async (options) => {
 const statusLabel = computed(() => {
   const s = logistics.value?.status;
   const MAP: Record<string, string> = {
-    IN_TRANSIT: '运输中',
-    DELIVERED: '已签收',
-    PENDING: '待揽收',
-    PICKED_UP: '已揽收',
-    EXCEPTION: '物流异常',
+    IN_TRANSIT: t('logistics.status.inTransit'),
+    DELIVERED: t('logistics.status.delivered'),
+    PENDING: t('logistics.status.pending'),
+    PICKED_UP: t('logistics.status.pickedUp'),
+    EXCEPTION: t('logistics.status.exception'),
   };
-  return s ? (MAP[s] ?? '运输中') : '运输中';
+  return s ? (MAP[s] ?? t('logistics.status.inTransit')) : t('logistics.status.inTransit');
 });
 
-const deliveryEstimate = computed(() => logistics.value?.deliveryEstimate ?? '预计明天送达');
+const deliveryEstimate = computed(
+  () => logistics.value?.deliveryEstimate ?? t('logistics.deliveryEstimateFallback'),
+);
 
 function copyTrackingNumber() {
   const num = logistics.value?.trackingNumber;
@@ -53,13 +57,13 @@ function copyTrackingNumber() {
   uni.setClipboardData({
     data: num,
     success() {
-      uni.showToast({ title: '已复制', icon: 'none' });
+      uni.showToast({ title: t('logistics.copied'), icon: 'none' });
     },
   });
 }
 
 function subscribeUpdates() {
-  uni.showToast({ title: '订阅成功', icon: 'none' });
+  uni.showToast({ title: t('logistics.subscribeSuccess'), icon: 'none' });
 }
 </script>
 
@@ -116,13 +120,17 @@ function subscribeUpdates() {
               }}</text>
             </view>
             <view class="flex items-center justify-between">
-              <text class="text-xs text-slate-400">共{{ logistics.totalQuantity }}件商品</text>
+              <text class="text-xs text-slate-400">
+                {{ t('logistics.totalItems', { count: logistics.totalQuantity }) }}
+              </text>
               <view
                 class="flex items-center gap-1 bg-slate-100 rounded-full px-3 py-1"
                 @tap="copyTrackingNumber"
               >
                 <TIcon name="file-copy" v-bind="{ size: '22rpx', color: '#475569' }" />
-                <text class="text-sm text-slate-950 leading-none">复制单号</text>
+                <text class="text-sm text-slate-950 leading-none">
+                  {{ t('logistics.copyTrackingNumber') }}
+                </text>
               </view>
             </view>
           </view>
@@ -133,7 +141,9 @@ function subscribeUpdates() {
         <view class="bg-white rounded-2 p-6 border-0.5 border-solid border-slate-100 shadow-xs">
           <view class="flex items-center gap-2 mb-6">
             <TIcon name="map" v-bind="{ size: '30rpx', color: '#ee2b2b' }" />
-            <text class="text-base font-medium text-slate-950">订单追踪</text>
+            <text class="text-base font-medium text-slate-950">
+              {{ t('logistics.orderTracking') }}
+            </text>
           </view>
 
           <view class="flex flex-col">
@@ -182,7 +192,7 @@ function subscribeUpdates() {
 
     <view v-else class="flex flex-col items-center justify-center h-[60vh] gap-3">
       <TIcon name="map-off" v-bind="{ size: '100rpx', color: '#cbd5e1' }" />
-      <text class="text-sm text-slate-400">暂无物流信息</text>
+      <text class="text-sm text-slate-400">{{ t('logistics.empty') }}</text>
     </view>
 
     <view
@@ -194,7 +204,9 @@ function subscribeUpdates() {
           class="flex-1 h-11 rounded-2 flex items-center justify-center gap-2 border-0.5 border-solid border-slate-200"
         >
           <TIcon name="service" v-bind="{ size: '28rpx', color: '#334155' }" />
-          <text class="text-base font-medium text-slate-700 leading-normal">联系客服</text>
+          <text class="text-base font-medium text-slate-700 leading-normal">
+            {{ t('logistics.contactService') }}
+          </text>
         </AppContactButton>
         <view
           class="h-11 rounded-2 bg-brand flex items-center justify-center gap-2"
@@ -202,7 +214,9 @@ function subscribeUpdates() {
           @tap="subscribeUpdates"
         >
           <TIcon name="notification" v-bind="{ size: '28rpx', color: '#ffffff' }" />
-          <text class="text-base font-medium text-white leading-normal">订阅更新</text>
+          <text class="text-base font-medium text-white leading-normal">
+            {{ t('logistics.subscribeUpdates') }}
+          </text>
         </view>
       </view>
     </view>

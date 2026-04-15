@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useI18n } from 'vue-i18n';
 import { ICON_COLOR } from '@/helpers/icon';
 import { formatImageUrlWithThumbnail, getThumbnailUrl } from '@/helpers/image';
 import { openLegalDocument } from '@/helpers/legal';
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 const appConfig = useAppConfig();
 const { onLoginSuccess, syncProfile } = useAuth();
 const userStore = useUserStore();
+const { t } = useI18n();
 
 type PanelView = 'loading' | 'bound' | 'methods';
 
@@ -59,23 +61,28 @@ interface MethodMeta {
 
 const methodMeta: Record<LoginMethod, MethodMeta> = {
   phoneQuick: {
-    label: '手机号一键登录',
-    shortLabel: '一键登录',
+    label: t('login.phoneQuick'),
+    shortLabel: t('login.phoneQuickShort'),
     icon: 'mobile',
-    desc: '使用微信绑定手机号快速登录',
+    desc: t('login.phoneQuickDesc'),
   },
   phoneCode: {
-    label: '其他手机号登录',
-    shortLabel: '手机号登录',
+    label: t('login.phoneCode'),
+    shortLabel: t('login.phoneCodeShort'),
     icon: 'mobile',
-    desc: '使用手机号及短信验证码登录',
+    desc: t('login.phoneCodeDesc'),
   },
-  email: { label: '邮箱登录', shortLabel: '邮箱登录', icon: 'mail', desc: '使用邮箱及验证码登录' },
+  email: {
+    label: t('login.email'),
+    shortLabel: t('login.email'),
+    icon: 'mail',
+    desc: t('login.emailDesc'),
+  },
   haloAccount: {
-    label: '账号密码登录',
-    shortLabel: '账号密码',
+    label: t('login.haloAccount'),
+    shortLabel: t('login.haloAccountShort'),
     icon: 'user-circle',
-    desc: '使用账号和密码登录',
+    desc: t('login.haloAccountDesc'),
   },
 };
 
@@ -190,14 +197,14 @@ async function handleLoginResult(result: any) {
 
 async function handlePhoneQuickResult(e: any) {
   if (!agreed.value) {
-    uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
     return;
   }
   const phoneCode = e?.detail?.code;
   if (!phoneCode) {
     const errno = e?.detail?.errno;
     if (errno !== 1) {
-      uni.showToast({ title: '获取手机号失败，请重试', icon: 'none' });
+      uni.showToast({ title: t('login.getPhoneFailed'), icon: 'none' });
     }
     return;
   }
@@ -206,7 +213,7 @@ async function handlePhoneQuickResult(e: any) {
     const result = await sendRequest(authApi.loginByPhoneQuick(phoneCode));
     await handleLoginResult(result);
   } catch {
-    uni.showToast({ title: '登录失败，请稍后重试', icon: 'none' });
+    uni.showToast({ title: t('login.failed'), icon: 'none' });
   } finally {
     boundLoading.value = false;
   }
@@ -222,13 +229,13 @@ function onSecondaryPhoneQuick(e: any) {
 
 function onPhoneQuickTap() {
   if (!agreed.value) {
-    uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
   }
 }
 
 function handleBoundLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
     return;
   }
   if (!boundResult.value?.user) {
@@ -288,7 +295,7 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
         <view
           class="w-10 h-10 rounded-full border-4 border-brand border-t-transparent animate-spin"
         />
-        <text class="text-slate-400 text-sm">正在验证身份，请稍候…</text>
+        <text class="text-slate-400 text-sm">{{ $t('login.verifying') }}</text>
       </view>
 
       <view v-else-if="panelView === 'bound'" class="flex flex-col px-6 pt-3 gap-3">
@@ -308,14 +315,14 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
           </view>
           <view class="flex flex-col flex-1 min-w-0 gap-0.5">
             <text class="text-slate-950 text-sm font-semibold truncate">
-              {{ boundResult?.user?.spec?.displayName ?? '未知用户' }}
+              {{ boundResult?.user?.spec?.displayName ?? $t('common.unknownUser') }}
             </text>
             <text v-if="boundResult?.user?.spec?.email" class="text-slate-400 text-xs truncate">
               {{ boundResult.user.spec.email }}
             </text>
           </view>
           <view class="px-2 py-1 rounded-full bg-green-50 shrink-0">
-            <text class="text-green-600 text-xs">已关联</text>
+            <text class="text-green-600 text-xs">{{ $t('login.bound') }}</text>
           </view>
         </view>
 
@@ -326,12 +333,12 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
           @tap="handleBoundLogin"
         >
           <text class="text-white text-base font-bold">
-            {{ boundLoading ? '登录中…' : '一键登录' }}
+            {{ boundLoading ? $t('login.loggingIn') : $t('login.phoneQuickShort') }}
           </text>
         </view>
 
         <view class="flex items-center justify-center py-1" @tap="switchToMethods">
-          <text class="text-brand text-sm font-medium">使用其他方式登录</text>
+          <text class="text-brand text-sm font-medium">{{ $t('login.useOtherMethods') }}</text>
         </view>
       </view>
 
@@ -360,7 +367,7 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
             v-if="loginMethods.primary === 'phoneQuick'"
             class="w-full flex items-center justify-center gap-2 rounded-full py-4 bg-brand-muted"
           >
-            <text class="text-white text-base font-bold">手机号一键登录</text>
+            <text class="text-white text-base font-bold">{{ $t('login.phoneQuick') }}</text>
           </view>
           <!-- #endif -->
           <view
@@ -380,7 +387,7 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
           <view v-if="secondaryMethods.length > 0" class="flex flex-col gap-3">
             <view class="flex items-center gap-3">
               <view class="flex-1 h-[1rpx] bg-slate-100" />
-              <text class="text-slate-400 text-xs shrink-0">其他登录方式</text>
+              <text class="text-slate-400 text-xs shrink-0">{{ $t('login.otherMethods') }}</text>
               <view class="flex-1 h-[1rpx] bg-slate-100" />
             </view>
             <view class="grid w-full gap-x-3 gap-y-4" :class="secondaryMethodsGridClass">
@@ -480,13 +487,13 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
           <TIcon name="check" v-bind="{ size: '24rpx', color: ICON_COLOR.inverse }" />
         </view>
         <view class="flex flex-wrap items-center line-height-tight">
-          <text class="text-slate-500 text-xs">已阅读并同意</text>
+          <text class="text-slate-500 text-xs">{{ $t('login.readAndAgree') }}</text>
           <text class="text-brand text-xs font-medium" @tap.stop="onAgreementTap('user')">
-            《用户协议》
+            {{ $t('legal.userAgreement') }}
           </text>
-          <text class="text-slate-500 text-xs">和</text>
+          <text class="text-slate-500 text-xs">{{ $t('login.and') }}</text>
           <text class="text-brand text-xs font-medium" @tap.stop="onAgreementTap('privacy')">
-            《隐私政策》
+            {{ $t('legal.privacyPolicy') }}
           </text>
         </view>
       </view>

@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide, onError, onUnhandledRejection } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppStore } from '@/store';
+import { getLocale } from '@/locales';
 import { showErrorToast, isHaloProblem } from '@/utils/error';
 
 const { init } = useAuth();
 const appStore = useAppStore();
+const { t } = useI18n();
 
 onLaunch(async () => {
+  appStore.setLocale(getLocale());
   await init();
 
   uni.onNetworkStatusChange(({ isConnected }) => {
     appStore.setNetworkConnected(isConnected);
     if (!isConnected) {
-      uni.showToast({ title: '网络已断开，请检查网络连接', icon: 'none' });
+      uni.showToast({ title: t('common.networkDisconnected'), icon: 'none' });
     }
   });
 });
@@ -24,7 +28,7 @@ onHide(() => {});
 
 onError((error: string) => {
   console.error('[GlobalError]', error);
-  showErrorToast('页面发生异常，请重试');
+  showErrorToast(t('common.pageError'));
 });
 
 // #ifdef MP-WEIXIN

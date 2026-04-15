@@ -1,4 +1,5 @@
 import type { HaloProblemDetail } from '@/types/api';
+import { translate } from '@/locales';
 
 export function isHaloProblem(error: unknown): error is HaloProblemDetail {
   return typeof error === 'object' && error !== null && 'status' in error && 'title' in error;
@@ -12,7 +13,7 @@ export function showErrorToast(messageOrProblem: string | HaloProblemDetail): vo
   const message =
     typeof messageOrProblem === 'string'
       ? messageOrProblem
-      : (messageOrProblem.detail ?? messageOrProblem.title ?? '发生未知错误');
+      : (messageOrProblem.detail ?? messageOrProblem.title ?? translate('common.unknownError'));
 
   uni.showToast({
     title: message.slice(0, 30),

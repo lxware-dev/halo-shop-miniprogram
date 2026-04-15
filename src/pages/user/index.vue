@@ -12,8 +12,10 @@ import { useUserStore } from '@/store';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
 import { useSmoothLoading } from '@/hooks/useSmoothLoading';
 import { useTabBar } from '@/composables/useTabBar';
+import { useI18n } from 'vue-i18n';
 
 const showLoginDrawer = ref(false);
+const { t } = useI18n();
 
 const userStore = useUserStore();
 const { totalHeight } = useTabBar();
@@ -40,7 +42,9 @@ onShow(() => {
 });
 
 const displayName = computed(
-  () => user.value?.spec?.displayName ?? (isLoggedIn.value ? '用户' : '未登录'),
+  () =>
+    user.value?.spec?.displayName ??
+    (isLoggedIn.value ? t('user.defaultName') : t('user.notLoggedIn')),
 );
 
 const userId = computed(() => {
@@ -50,19 +54,19 @@ const userId = computed(() => {
 
 const userAvatar = computed(() => user.value?.spec?.avatar ?? '');
 
-const orderTabs = [
-  { label: '待付款', icon: 'wallet', tab: 1 },
-  { label: '待发货', icon: 'send', tab: 2 },
-  { label: '待收货', icon: 'secured', tab: 3 },
-];
+const orderTabs = computed(() => [
+  { label: t('order.tab.pendingPayment'), icon: 'wallet', tab: 1 },
+  { label: t('order.tab.pendingShipment'), icon: 'send', tab: 2 },
+  { label: t('order.tab.pendingReceipt'), icon: 'secured', tab: 3 },
+]);
 
-const menuGroups = [
+const menuGroups = computed(() => [
   [
-    { label: '收货地址', icon: 'location', path: '/subpkg-mine/address-list/index' },
-    { label: '帮助与客服', icon: 'help-circle', path: '/subpkg-mine/help/index' },
-    { label: '关于我们', icon: 'info-circle', path: '/subpkg-mine/about/index' },
+    { label: t('user.address'), icon: 'location', path: '/subpkg-mine/address-list/index' },
+    { label: t('user.help'), icon: 'help-circle', path: '/subpkg-mine/help/index' },
+    { label: t('user.about'), icon: 'info-circle', path: '/subpkg-mine/about/index' },
   ],
-];
+]);
 
 function onOrderTab(tab: { label: string; tab: number }) {
   navigateToPage(`/subpkg-trade/order-list/index?tab=${tab.tab}`);
@@ -103,8 +107,10 @@ function onViewAllOrders() {
           <TIcon name="user-filled" v-bind="{ size: '72rpx', color: 'rgba(255,255,255,0.9)' }" />
         </view>
         <view class="flex flex-col flex-1 min-w-0 gap-1.5">
-          <text class="text-white font-bold text-lg leading-relaxed">登录 / 注册</text>
-          <text class="text-white/70 text-xs">登录后享受更多权益</text>
+          <text class="text-white font-bold text-lg leading-relaxed">{{
+            $t('login.register')
+          }}</text>
+          <text class="text-white/70 text-xs">{{ $t('login.benefits') }}</text>
         </view>
         <TIcon name="chevron-right" v-bind="{ size: '32rpx', color: 'rgba(255,255,255,0.6)' }" />
       </view>
@@ -151,9 +157,11 @@ function onViewAllOrders() {
     <view class="px-4 -mt-5">
       <view class="bg-white rounded-3 overflow-hidden shadow-lg">
         <view class="flex items-center justify-between px-5 pt-4.5 pb-3">
-          <text class="text-slate-950 font-bold" style="font-size: 30rpx">我的订单</text>
+          <text class="text-slate-950 font-bold" style="font-size: 30rpx">{{
+            $t('user.orders')
+          }}</text>
           <view class="flex items-center gap-0.5" @tap="onViewAllOrders">
-            <text class="text-xs text-slate-400">查看全部</text>
+            <text class="text-xs text-slate-400">{{ $t('user.viewAllOrders') }}</text>
             <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: ICON_COLOR.muted }" />
           </view>
         </view>

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useI18n } from 'vue-i18n';
 import { addressApi } from '@/api/modules/address';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { useScrollViewPullRefresh } from '@/hooks/usePullRefresh';
@@ -15,6 +16,7 @@ import type { UserAddressResponse, UserAddressUpsertRequest } from '@halo-dev/ap
  * otherwise it is management mode
  */
 const mode = ref<'manage' | 'select'>('manage');
+const { t } = useI18n();
 
 onLoad((options) => {
   if (options?.mode === 'select') {
@@ -41,7 +43,7 @@ async function refreshAddresses() {
     const data = await runAddresses({});
     addresses.value = data ?? [];
   } catch {
-    uni.showToast({ title: '加载地址失败', icon: 'none' });
+    uni.showToast({ title: t('address.loadFailed'), icon: 'none' });
   }
 }
 
@@ -95,7 +97,7 @@ function importFromPlatform() {
       if (err?.errMsg?.includes('cancel')) {
         return;
       }
-      uni.showToast({ title: '获取地址失败，请手动填写', icon: 'none' });
+      uni.showToast({ title: t('address.importFailed'), icon: 'none' });
     },
   });
 }
@@ -103,16 +105,16 @@ function importFromPlatform() {
 
 function deleteAddress(address: UserAddressResponse) {
   uni.showModal({
-    title: '删除地址',
-    content: '确定要删除该收货地址吗？',
+    title: t('address.deleteTitle'),
+    content: t('address.deleteContent'),
     success: async (res) => {
       if (res.confirm && address.id != null) {
         try {
           await sendRequest(addressApi.deleteAddress(address.id));
           addresses.value = addresses.value.filter((a) => a.id !== address.id);
-          uni.showToast({ title: '删除成功', icon: 'success' });
+          uni.showToast({ title: t('address.deleteSuccess'), icon: 'success' });
         } catch {
-          uni.showToast({ title: '删除失败', icon: 'none' });
+          uni.showToast({ title: t('address.deleteFailed'), icon: 'none' });
         }
       }
     },
@@ -158,11 +160,11 @@ async function toggleDefaultAddress(address: UserAddressResponse) {
       return item;
     });
     uni.showToast({
-      title: targetIsDefault ? '已设为默认地址' : '已取消默认地址',
+      title: targetIsDefault ? t('address.setDefaultSuccess') : t('address.unsetDefaultSuccess'),
       icon: 'success',
     });
   } catch {
-    uni.showToast({ title: '设置默认地址失败', icon: 'none' });
+    uni.showToast({ title: t('address.setDefaultFailed'), icon: 'none' });
   } finally {
     switchingDefaultId.value = null;
   }
@@ -180,7 +182,7 @@ function getFullAddress(address: UserAddressResponse): string {
 <template>
   <view class="flex flex-col min-h-screen bg-bg-page">
     <view v-if="loading" class="flex items-center justify-center py-10">
-      <text class="text-slate-400 text-base">加载中...</text>
+      <text class="text-slate-400 text-base">{{ t('common.loading') }}</text>
     </view>
 
     <template v-else>
@@ -212,7 +214,7 @@ function getFullAddress(address: UserAddressResponse): string {
                 v-if="address.isDefault"
                 class="flex items-center justify-center px-1.5 py-0.5 rounded-1 shrink-0 bg-brand/10"
               >
-                <text class="text-brand text-xs">默认</text>
+                <text class="text-brand text-xs">{{ t('address.defaultBadge') }}</text>
               </view>
             </view>
 
@@ -238,7 +240,7 @@ function getFullAddress(address: UserAddressResponse): string {
                     v-bind="{ size: '16rpx', color: '#ffffff' }"
                   />
                 </view>
-                <text class="text-slate-600 text-xs">设为默认地址</text>
+                <text class="text-slate-600 text-xs">{{ t('address.default') }}</text>
               </view>
 
               <view class="flex items-center gap-4">
@@ -246,14 +248,14 @@ function getFullAddress(address: UserAddressResponse): string {
                   class="flex items-center justify-center text-xs text-slate-500"
                   @tap.stop="deleteAddress(address)"
                 >
-                  删除
+                  {{ t('address.delete') }}
                 </view>
                 <view class="w-[1rpx] self-stretch bg-slate-200" />
                 <view
                   class="flex items-center justify-center text-xs text-slate-500"
                   @tap.stop="goEditAddress(address)"
                 >
-                  修改
+                  {{ t('address.edit') }}
                 </view>
               </view>
             </view>
@@ -263,8 +265,8 @@ function getFullAddress(address: UserAddressResponse): string {
 
       <view v-else class="flex-1 flex flex-col items-center justify-center py-20 gap-3">
         <TIcon name="location" v-bind="{ size: '120rpx', color: '#cbd5e1' }" />
-        <text class="text-slate-400 text-base">暂无收货地址</text>
-        <text class="text-slate-300 text-xs">点击下方按钮添加地址</text>
+        <text class="text-slate-400 text-base">{{ t('address.empty') }}</text>
+        <text class="text-slate-300 text-xs">{{ t('address.emptyDesc') }}</text>
       </view>
     </template>
 
@@ -278,14 +280,14 @@ function getFullAddress(address: UserAddressResponse): string {
           @tap="goAddAddress"
         >
           <TIcon name="add" v-bind="{ size: '32rpx', color: '#ffffff' }" />
-          <text class="text-white text-base font-medium">新增地址</text>
+          <text class="text-white text-base font-medium">{{ t('address.add') }}</text>
         </view>
         <view
           class="flex-1 flex items-center justify-center gap-1.5 border border-solid border-brand rounded-1 py-3"
           @tap="importFromPlatform"
         >
           <TIcon name="map" v-bind="{ size: '32rpx', color: '#ee2b2b' }" />
-          <text class="text-brand text-base font-medium">一键导入</text>
+          <text class="text-brand text-base font-medium">{{ t('address.import') }}</text>
         </view>
       </view>
       <!-- #endif -->
@@ -295,7 +297,7 @@ function getFullAddress(address: UserAddressResponse): string {
         @tap="goAddAddress"
       >
         <TIcon name="add" v-bind="{ size: '32rpx', color: '#ffffff' }" />
-        <text class="text-white text-base font-medium">新增收货地址</text>
+        <text class="text-white text-base font-medium">{{ t('address.addFull') }}</text>
       </view>
       <!-- #endif -->
     </view>

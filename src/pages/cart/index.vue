@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { onShow } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import AppLoading from '@/components/common/AppLoading.vue';
 import AppEmpty from '@/components/common/AppEmpty.vue';
 import LoginPanel from '@/components/business/LoginPanel.vue';
@@ -25,9 +26,10 @@ import { usePagePullRefresh } from '@/hooks/usePullRefresh';
 import { useCartStore, useUserStore } from '@/store';
 
 const { totalHeight } = useTabBar();
-const { maxCartItems } = useAppConfig().business;
+const { maxCartItems, currencySymbol } = useAppConfig().business;
 const cartStore = useCartStore();
 const userStore = useUserStore();
+const { t } = useI18n();
 const showLoginPanel = computed(() => !userStore.isLoggedIn);
 
 const listPaddingBottom = computed(() => {
@@ -187,7 +189,7 @@ async function changeQuantity(item: CartItemResponse, delta: number) {
     return;
   }
   if (newQty > maxCartItems) {
-    uni.showToast({ title: `每件商品最多加 ${maxCartItems} 件`, icon: 'none' });
+    uni.showToast({ title: t('cart.maxQuantity', { max: maxCartItems }), icon: 'none' });
     return;
   }
   try {
@@ -195,7 +197,7 @@ async function changeQuantity(item: CartItemResponse, delta: number) {
     item.quantity = newQty;
     cartStore.updateQuantity(item.id!, newQty);
   } catch {
-    uni.showToast({ title: '操作失败', icon: 'none' });
+    uni.showToast({ title: t('cart.operationFailed'), icon: 'none' });
   }
 }
 
@@ -207,14 +209,14 @@ async function doRemoveItem(item: CartItemResponse) {
     cartStore.removeItem(item.id!);
     closeSwipe(item.id!);
   } catch {
-    uni.showToast({ title: '删除失败', icon: 'none' });
+    uni.showToast({ title: t('cart.removeFailed'), icon: 'none' });
   }
 }
 
 function removeItem(item: CartItemResponse) {
   uni.showModal({
-    title: '提示',
-    content: '确定要删除该商品吗？',
+    title: t('cart.confirmTitle'),
+    content: t('cart.removeConfirm'),
     success: async ({ confirm }) => {
       if (!confirm) {
         return;
@@ -226,12 +228,12 @@ function removeItem(item: CartItemResponse) {
 
 async function removeSelected() {
   if (!selectedItems.value.length) {
-    uni.showToast({ title: '请先选择商品', icon: 'none' });
+    uni.showToast({ title: t('cart.selectItemsFirst'), icon: 'none' });
     return;
   }
   uni.showModal({
-    title: '提示',
-    content: `确定删除选中的 ${selectedItems.value.length} 件商品吗？`,
+    title: t('cart.confirmTitle'),
+    content: t('cart.removeSelectedConfirm', { count: selectedItems.value.length }),
     success: async ({ confirm }) => {
       if (!confirm) {
         return;
@@ -245,7 +247,7 @@ async function removeSelected() {
 
 function goToCheckout() {
   if (!selectedItems.value.length) {
-    uni.showToast({ title: '请选择商品', icon: 'none' });
+    uni.showToast({ title: t('cart.selectItems'), icon: 'none' });
     return;
   }
   const checkoutItems = selectedItems.value
@@ -258,7 +260,7 @@ function goToCheckout() {
         typeof item.cartItemId === 'number',
     );
   if (!checkoutItems.length) {
-    uni.showToast({ title: '缺少可结算商品', icon: 'none' });
+    uni.showToast({ title: t('cart.noCheckoutItems'), icon: 'none' });
     return;
   }
   const items = encodeURIComponent(JSON.stringify(checkoutItems));
@@ -375,7 +377,7 @@ async function openSkuSelector(item: CartItemResponse) {
     skuProduct.value = data;
     skuVisible.value = true;
   } catch {
-    uni.showToast({ title: '加载规格失败', icon: 'none' });
+    uni.showToast({ title: t('cart.loadSkuFailed'), icon: 'none' });
   } finally {
     skuLoadingId.value = null;
   }
@@ -407,9 +409,9 @@ async function confirmSkuChange() {
       item.quantity = newQty;
     }
     skuVisible.value = false;
-    uni.showToast({ title: '已更新', icon: 'success' });
+    uni.showToast({ title: t('cart.updated'), icon: 'success' });
   } catch {
-    uni.showToast({ title: '更新失败', icon: 'none' });
+    uni.showToast({ title: t('cart.updateFailed'), icon: 'none' });
   } finally {
     skuSubmitting.value = false;
   }
@@ -427,7 +429,9 @@ function goToProduct(product: ProductResponse | undefined) {
   <view class="flex flex-col min-h-screen bg-bg-page" @tap="onPageTap">
     <view v-if="!showLoginPanel" class="bg-white flex justify-end px-4 py-3 shadow-sm z-10">
       <view @tap.stop="toggleEditing">
-        <text class="text-slate-600 text-sm">{{ isEditing ? '完成' : '编辑' }}</text>
+        <text class="text-slate-600 text-sm">
+          {{ isEditing ? $t('cart.done') : $t('cart.edit') }}
+        </text>
       </view>
     </view>
 
@@ -445,9 +449,9 @@ function goToProduct(product: ProductResponse | undefined) {
       <template v-else>
         <AppEmpty
           v-if="!cartItems.length"
-          text="购物车还是空的"
-          subtext="去挑选你喜欢的商品，加入购物车吧"
-          cta-text="去逛逛"
+          :text="$t('cart.emptyTitle')"
+          :subtext="$t('cart.emptySubtitle')"
+          :cta-text="$t('cart.goShopping')"
           @cta="goShopping"
         />
 
@@ -463,7 +467,7 @@ function goToProduct(product: ProductResponse | undefined) {
               style="height: calc(100% - 4rpx); margin: auto 0"
               @tap.stop="removeItem(item)"
             >
-              <text class="text-white text-sm font-bold">删除</text>
+              <text class="text-white text-sm font-bold">{{ $t('cart.remove') }}</text>
             </view>
 
             <view
@@ -535,7 +539,7 @@ function goToProduct(product: ProductResponse | undefined) {
 
                 <view class="flex items-end justify-between mt-2">
                   <text class="text-brand text-base font-bold">
-                    ¥{{ (item.productVariant?.price ?? 0).toFixed(2) }}
+                    {{ currencySymbol }}{{ (item.productVariant?.price ?? 0).toFixed(2) }}
                   </text>
 
                   <view class="flex items-center bg-slate-100 rounded-1 overflow-hidden">
@@ -593,23 +597,25 @@ function goToProduct(product: ProductResponse | undefined) {
             v-bind="{ size: '24rpx', color: ICON_COLOR.inverse }"
           />
         </view>
-        <text class="text-slate-500 text-sm">全选</text>
+        <text class="text-slate-500 text-sm">{{ $t('cart.selectAll') }}</text>
       </view>
 
       <view v-if="!isEditing" class="flex items-center gap-4">
         <view class="flex flex-col items-end">
           <view class="flex items-baseline gap-1">
-            <text class="text-slate-950 text-3.5">合计:</text>
-            <text class="text-brand text-lg font-bold">¥{{ totalPrice.toFixed(2) }}</text>
+            <text class="text-slate-950 text-3.5">{{ $t('cart.total') }}</text>
+            <text class="text-brand text-lg font-bold">
+              {{ currencySymbol }}{{ totalPrice.toFixed(2) }}
+            </text>
           </view>
-          <text class="text-slate-400 text-2.5">不含运费</text>
+          <text class="text-slate-400 text-2.5">{{ $t('cart.shippingExcluded') }}</text>
         </view>
         <view
           class="bg-brand rounded-3 px-6 py-2.5 flex items-center justify-center"
           @tap.stop="goToCheckout"
         >
           <text class="text-white text-sm font-bold">
-            结算{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
+            {{ $t('cart.checkout') }}{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
           </text>
         </view>
       </view>
@@ -628,7 +634,7 @@ function goToProduct(product: ProductResponse | undefined) {
             class="text-sm font-bold"
             :class="selectedCount > 0 ? 'text-brand' : 'text-slate-300'"
           >
-            删除{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
+            {{ $t('cart.remove') }}{{ selectedCount > 0 ? `(${selectedCount})` : '' }}
           </text>
         </view>
       </view>
@@ -655,7 +661,7 @@ function goToProduct(product: ProductResponse | undefined) {
         @tap="confirmSkuChange"
       >
         <text class="text-white text-base font-bold">{{
-          skuSubmitting ? '更新中...' : '确认'
+          skuSubmitting ? $t('cart.updating') : $t('common.confirm')
         }}</text>
       </view>
     </SkuSelector>

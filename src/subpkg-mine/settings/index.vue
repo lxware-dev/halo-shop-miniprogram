@@ -2,6 +2,7 @@
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { computed, ref } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import { useFetch } from '@/hooks/useRequest';
 import { userApi } from '@/api';
 import { guardCurrentPageAccess } from '@/helpers/auth';
@@ -12,10 +13,11 @@ import { formatImageUrlWithThumbnail } from '@/helpers/image';
 const userStore = useUserStore();
 const { data: detailedUser, send: refreshProfile } = useFetch(userApi.getProfile(), false);
 const { logout } = useAuth();
+const { t } = useI18n();
 
 const user = computed(() => detailedUser.value?.user ?? userStore.profile);
 
-const displayName = computed(() => user.value?.spec?.displayName ?? '未登录');
+const displayName = computed(() => user.value?.spec?.displayName ?? t('user.notLoggedIn'));
 const userAvatar = computed(() => user.value?.spec?.avatar ?? '');
 const userId = computed(() => {
   const name = user.value?.metadata?.name ?? '';
@@ -58,10 +60,10 @@ async function onChooseAvatar(e: any) {
     const result = await userApi.uploadAvatar(avatarUrl);
     userStore.setProfile(result);
     await refreshProfile().catch(() => {});
-    uni.showToast({ title: '头像已更新', icon: 'success' });
+    uni.showToast({ title: t('settings.avatarUpdated'), icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '头像更新失败，请重试',
+      title: error instanceof Error ? error.message : t('settings.avatarUpdateFailed'),
       icon: 'none',
     });
   } finally {
@@ -71,11 +73,11 @@ async function onChooseAvatar(e: any) {
 // #endif
 function onLogout() {
   uni.showModal({
-    title: '退出登录',
-    content: '确定要退出登录吗？',
-    confirmText: '退出',
+    title: t('settings.logoutTitle'),
+    content: t('settings.logoutContent'),
+    confirmText: t('settings.logoutConfirm'),
     confirmColor: '#ee2b2b',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     success(res) {
       if (res.confirm) {
         logout();
@@ -91,7 +93,7 @@ function onLogout() {
       class="flex flex-col gap-2 mx-4 mt-4 overflow-hidden rounded-3 border border-solid border-slate-100 bg-white"
     >
       <view class="flex items-center justify-between p-3">
-        <text class="text-base text-slate-900">头像</text>
+        <text class="text-base text-slate-900">{{ $t('settings.avatar') }}</text>
         <view
           class="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 w-11 h-11"
         >
@@ -114,7 +116,7 @@ function onLogout() {
       </view>
 
       <view class="flex p-3 items-center justify-between" @tap="navigateToNicknamePage">
-        <text class="text-base text-slate-900">昵称</text>
+        <text class="text-base text-slate-900">{{ $t('settings.nickname') }}</text>
         <view class="flex items-center gap-2 max-w-52 min-w-0">
           <text class="truncate text-right text-base text-slate-400">{{ displayName }}</text>
           <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: '#94a3b8' }" />
@@ -122,14 +124,14 @@ function onLogout() {
       </view>
 
       <view class="flex items-center justify-between p-3">
-        <text class="text-base text-slate-900">账号 ID</text>
+        <text class="text-base text-slate-900">{{ $t('settings.accountId') }}</text>
         <text class="max-w-52 truncate text-right text-base text-slate-400">{{ userId }}</text>
       </view>
     </view>
 
     <view class="mx-4 mt-3 overflow-hidden rounded-3 bg-white mb-10">
       <view class="flex items-center justify-center h-14" @tap="onLogout">
-        <text class="text-brand text-base font-medium">退出登录</text>
+        <text class="text-brand text-base font-medium">{{ $t('settings.logout') }}</text>
       </view>
     </view>
   </view>

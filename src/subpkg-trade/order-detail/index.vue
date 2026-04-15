@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
 import { orderApi } from '@/api/modules/order';
@@ -8,7 +9,7 @@ import { guardCurrentPageAccess } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { useCart } from '@/hooks/useCart';
 import { sendRequest, useAsyncQuery } from '@/hooks/useRequest';
-import { formatPrice, formatDate, maskPhone, joinName } from '@/utils/format';
+import { formatCurrency, maskPhone, joinName, formatDate } from '@/utils/format';
 import {
   getOrderStatusInfo,
   canPayNow,
@@ -22,6 +23,7 @@ import type { OrderResponse, OrderItemResponse, FulfillmentUcResponse } from '@h
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
 
 const orderCode = ref('');
+const { t } = useI18n();
 const {
   data: detailData,
   loading,
@@ -88,7 +90,7 @@ const latestLogistics = computed(() => {
     return null;
   }
   return {
-    carrier: label?.carrier ?? '快递',
+    carrier: label?.carrier ?? t('order.status.express'),
     trackingNumber: label?.trackingNumber ?? '',
   };
 });
@@ -146,16 +148,16 @@ function onPayNow() {
 
 async function onConfirmReceive() {
   uni.showModal({
-    title: '确认收货',
-    content: '确认已收到商品吗？',
+    title: t('order.confirmReceiveTitle'),
+    content: t('order.confirmReceiveContent'),
     success: async (res) => {
       if (res.confirm) {
         try {
           await sendRequest(orderApi.markAsReceived(orderCode.value));
-          uni.showToast({ title: '确认收货成功', icon: 'success' });
+          uni.showToast({ title: t('order.confirmReceiveSuccess'), icon: 'success' });
           await runOrderDetail({ orderCode: orderCode.value });
         } catch {
-          uni.showToast({ title: '操作失败', icon: 'none' });
+          uni.showToast({ title: t('order.actionFailed'), icon: 'none' });
         }
       }
     },
@@ -168,11 +170,11 @@ function onViewLogistics() {
 
 // function onCancelOrder() {
 //   uni.showModal({
-//     title: '取消订单',
-//     content: '确认要取消该订单吗？',
+//     title: t('order.cancelTitle'),
+//     content: t('order.cancelContent'),
 //     success: (res) => {
 //       if (res.confirm) {
-//         uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
+//         uni.showToast({ title: t('order.cancelUnavailable'), icon: 'none' });
 //       }
 //     },
 //   });
@@ -184,12 +186,12 @@ const buyingAgain = ref(false);
 async function onBuyAgain() {
   const o = order.value;
   if (!o?.items?.length) {
-    uni.showToast({ title: '订单暂无商品', icon: 'none' });
+    uni.showToast({ title: t('order.emptyItemsToast'), icon: 'none' });
     return;
   }
   const items = o.items.filter((i) => i.productVariantId != null && (i.quantity ?? 0) > 0);
   if (!items.length) {
-    uni.showToast({ title: '订单暂无商品', icon: 'none' });
+    uni.showToast({ title: t('order.emptyItemsToast'), icon: 'none' });
     return;
   }
   buyingAgain.value = true;
@@ -201,14 +203,14 @@ async function onBuyAgain() {
       })),
     );
     if (ok) {
-      uni.showToast({ title: '已加入购物车', icon: 'success', duration: 1500 });
+      uni.showToast({ title: t('order.addedToCart'), icon: 'success', duration: 1500 });
       goToCart();
     } else {
       uni.showModal({
         title: '',
-        content: '订单中的商品都卖光啦，再看看其他商品吧~',
+        content: t('order.soldOutFallback'),
         showCancel: false,
-        confirmText: '确定',
+        confirmText: t('common.confirm'),
         confirmColor: '#ee2b2b',
       });
     }
@@ -220,14 +222,14 @@ async function onBuyAgain() {
 function onCopyOrderCode() {
   uni.setClipboardData({
     data: orderCode.value,
-    success: () => uni.showToast({ title: '已复制', icon: 'success' }),
+    success: () => uni.showToast({ title: t('order.copied'), icon: 'success' }),
   });
 }
 </script>
 
 <template>
   <view v-if="loading" class="flex items-center justify-center min-h-screen bg-bg-page">
-    <text class="text-xs text-slate-400">加载中...</text>
+    <text class="text-xs text-slate-400">{{ $t('common.loading') }}</text>
   </view>
 
   <view
@@ -276,7 +278,12 @@ function onCopyOrderCode() {
         </view>
         <view class="flex-1 min-w-0 flex flex-col gap-1">
           <text class="text-sm text-slate-950 font-medium leading-snug">
-            您的包裹正在配送中，{{ latestLogistics.carrier }}：{{ latestLogistics.trackingNumber }}
+            {{
+              $t('order.shippingProgress', {
+                carrier: latestLogistics.carrier,
+                trackingNumber: latestLogistics.trackingNumber,
+              })
+            }}
           </text>
           <text class="text-xs text-slate-500">{{ formatDate(order.updatedAt) }}</text>
         </view>
@@ -354,7 +361,7 @@ function onCopyOrderCode() {
             </view>
             <view class="flex items-end justify-between">
               <text class="text-base text-brand font-bold">
-                ¥{{ formatPrice(item.unitPrice) }}
+                {{ formatCurrency(item.unitPrice) }}
               </text>
               <text class="text-xs text-slate-400">x {{ item.quantity }}</text>
             </view>
@@ -367,18 +374,18 @@ function onCopyOrderCode() {
         style="border-top: 1rpx solid rgba(238, 43, 43, 0.06)"
       >
         <view class="flex items-center justify-between">
-          <text class="text-sm text-slate-500">商品总额</text>
-          <text class="text-sm text-slate-950">¥{{ formatPrice(subtotal) }}</text>
+          <text class="text-sm text-slate-500">{{ $t('order.productTotal') }}</text>
+          <text class="text-sm text-slate-950">{{ formatCurrency(subtotal) }}</text>
         </view>
         <view class="flex items-center justify-between">
-          <text class="text-sm text-slate-500">运费</text>
+          <text class="text-sm text-slate-500">{{ $t('order.freight') }}</text>
           <text class="text-sm text-slate-950">
-            {{ shippingFee > 0 ? `¥${formatPrice(shippingFee)}` : '免运费' }}
+            {{ shippingFee > 0 ? formatCurrency(shippingFee) : $t('checkout.freeShipping') }}
           </text>
         </view>
         <view class="flex items-center justify-between pt-1">
-          <text class="text-sm text-slate-950">合计</text>
-          <text class="text-xl text-brand font-bold"> ¥{{ formatPrice(order.totalAmount) }} </text>
+          <text class="text-sm text-slate-950">{{ $t('order.total') }}</text>
+          <text class="text-xl text-brand font-bold">{{ formatCurrency(order.totalAmount) }}</text>
         </view>
       </view>
     </view>
@@ -386,12 +393,14 @@ function onCopyOrderCode() {
     <view class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5">
       <view class="flex items-center gap-2 mb-4">
         <view class="rounded-full bg-brand w-1 h-4" />
-        <text class="text-sm text-slate-950 font-medium">订单信息</text>
+        <text class="text-sm text-slate-950 font-medium">{{ $t('order.infoTitle') }}</text>
       </view>
 
       <view class="flex flex-col gap-3">
         <view class="flex items-center">
-          <text class="text-xs text-slate-500 shrink-0" style="width: 160rpx">订单编号</text>
+          <text class="text-xs text-slate-500 shrink-0" style="width: 160rpx">{{
+            $t('order.code')
+          }}</text>
           <text class="text-xs text-slate-950 flex-1 min-w-0" style="word-break: break-all">
             {{ order.orderCode }}
           </text>
@@ -399,22 +408,22 @@ function onCopyOrderCode() {
             class="shrink-0 flex items-center justify-center px-2 py-0.5 rounded-1.5 ml-2 bg-brand/10"
             @tap="onCopyOrderCode"
           >
-            <text class="text-xs text-brand">复制</text>
+            <text class="text-xs text-brand">{{ $t('common.copy') }}</text>
           </view>
         </view>
 
         <view class="flex items-center">
-          <text class="text-xs text-slate-500 shrink-0 w-20">创建时间</text>
+          <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.createdAt') }}</text>
           <text class="text-xs text-slate-950 flex-1">{{ formatDate(order.createdAt) }}</text>
         </view>
 
         <view v-if="order.paidAt" class="flex items-center">
-          <text class="text-xs text-slate-500 shrink-0 w-20">支付时间</text>
+          <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.paidAt') }}</text>
           <text class="text-xs text-slate-950 flex-1">{{ formatDate(order.paidAt) }}</text>
         </view>
 
         <view v-if="order.customerNotes" class="flex items-start">
-          <text class="text-xs text-slate-500 shrink-0 w-20">买家备注</text>
+          <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.customerNotes') }}</text>
           <text class="text-xs text-slate-950 flex-1 leading-relaxed">
             {{ order.customerNotes }}
           </text>
@@ -431,20 +440,20 @@ function onCopyOrderCode() {
   </view>
 
   <view v-else class="flex flex-col items-center justify-center min-h-screen bg-bg-page">
-    <text class="text-sm text-slate-400">订单不存在</text>
+    <text class="text-sm text-slate-400">{{ $t('order.notFound') }}</text>
   </view>
 
   <view
     v-if="order"
     class="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-end gap-3 px-4 pt-4 bg-white/90 border-t border-t-solid border-t-brand/10 shadow-up backdrop-blur-md pb-safe-sm"
   >
-    <!-- TODO: 取消订单功能暂未开放 -->
+    <!-- TODO: cancel order action -->
     <!-- <view
       v-if="showCancelOrder"
       class="px-4 py-2.5 rounded-1.5 border border-solid border-slate-200"
       @tap="onCancelOrder"
     >
-      <text class="text-sm text-slate-500 font-medium">取消订单</text>
+      <text class="text-sm text-slate-500 font-medium">{{ $t('order.cancel') }}</text>
     </view> -->
 
     <view
@@ -452,7 +461,7 @@ function onCopyOrderCode() {
       class="px-6 py-2.5 rounded-1.5 bg-brand shadow-brand-btn"
       @tap="onPayNow"
     >
-      <text class="text-sm text-white font-medium">立即支付</text>
+      <text class="text-sm text-white font-medium">{{ $t('order.payNow') }}</text>
     </view>
 
     <view
@@ -460,7 +469,7 @@ function onCopyOrderCode() {
       class="px-5 py-2.5 rounded-1.5 border border-solid border-brand"
       @tap="onViewLogistics"
     >
-      <text class="text-sm text-brand font-medium">查看物流</text>
+      <text class="text-sm text-brand font-medium">{{ $t('order.viewLogistics') }}</text>
     </view>
 
     <view
@@ -468,7 +477,7 @@ function onCopyOrderCode() {
       class="px-6 py-2.5 rounded-1.5 bg-brand shadow-brand-btn"
       @tap="onConfirmReceive"
     >
-      <text class="text-sm text-white font-medium">确认收货</text>
+      <text class="text-sm text-white font-medium">{{ $t('order.confirmReceive') }}</text>
     </view>
 
     <view
@@ -478,7 +487,7 @@ function onCopyOrderCode() {
       @tap="!buyingAgain && onBuyAgain()"
     >
       <text class="text-sm text-slate-950 font-medium">
-        {{ buyingAgain ? '添加中...' : '再次购买' }}
+        {{ buyingAgain ? $t('order.buyingAgain') : $t('order.buyAgain') }}
       </text>
     </view>
   </view>

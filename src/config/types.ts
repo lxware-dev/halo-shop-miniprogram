@@ -1,12 +1,13 @@
 /**
  * 登录方式配置项。
  *
- * - `phoneQuick`：手机号一键登录，仅微信小程序可用
- * - `phoneCode`：手机号 + 短信验证码登录
- * - `email`：邮箱 + 验证码登录
+ * - `phoneQuick`：手机号一键登录
  * - `haloAccount`：账号密码登录
+ * - `phoneCode`：手机号 + 短信验证码登录, 暂不可用
+ * - `email`：邮箱 + 验证码登录, 暂不可用
  */
 export type LoginMethod = 'phoneQuick' | 'phoneCode' | 'email' | 'haloAccount';
+export type AppLocaleCode = 'zh-CN' | 'en-US';
 
 /**
  * 每个 key 对应一个外部链接，页面会通过内置 WebView 打开。
@@ -56,7 +57,32 @@ export interface AppConfig {
     /**
      * 关于我们中的品牌介绍文案。
      */
-    brandDescription: string;
+    brandDescription?: string;
+    /**
+     * 关于我们底部单独展示的一行公司名称。
+     */
+    companyName?: string;
+    /**
+     * 版权文案中的权利归属主体。
+     * 例如：`Copyright © 2014-2026 XXX`
+     * 未配置时不展示版权文案。
+     */
+    copyrightOwner?: string;
+    /**
+     * 版权开始年份。
+     * 仅在配置了 `copyrightOwner` 时生效。
+     */
+    copyrightStartYear?: number;
+  };
+  /**
+   * 国际化配置。
+   */
+  i18n?: {
+    /**
+     * 默认语言。
+     * 配置后将优先于本地缓存和系统语言生效。
+     */
+    defaultLocale?: AppLocaleCode;
   };
   /**
    * Halo 服务端连接配置。
@@ -77,8 +103,8 @@ export interface AppConfig {
   auth: {
     /**
      * 登录方式配置。
-     * `primary` 为主登录方式，`supported` 为可切换的登录方式列表，
-     * 且 `supported` 中必须包含 `primary`。
+     * `primary` 为默认展示的主登录方式，
+     * `supported` 为可切换的其他登录方式列表。
      */
     loginMethods: {
       /**

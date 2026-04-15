@@ -5,6 +5,8 @@ import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import type { SpecDefinitionPayload } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
 import { ICON_COLOR } from '@/helpers/icon';
+import { useI18n } from 'vue-i18n';
+import { useAppConfig } from '@/config';
 
 const props = withDefaults(
   defineProps<{
@@ -53,6 +55,10 @@ const emit = defineEmits<{
   'update:selectedSpecs': [value: Record<string, string>];
   'update:quantity': [value: number];
 }>();
+
+const { currencySymbol } = useAppConfig().business;
+
+const { t } = useI18n();
 
 const { show, panelTranslate } = useDrawer(() => props.visible);
 
@@ -164,14 +170,14 @@ function onQuantityBlur(e: any) {
 
         <view class="flex flex-col gap-1 flex-1 pt-2">
           <view class="flex items-baseline gap-0.5">
-            <text class="text-brand text-sm font-medium">¥</text>
+            <text class="text-brand text-sm font-medium">{{ currencySymbol }}</text>
             <text class="text-brand text-2xl font-bold leading-none">{{ price }}</text>
           </view>
           <text v-if="trackInventory && stock >= 0" class="text-slate-500 text-xs">
-            库存 {{ stock }} 件
+            {{ t('sku.stock', { stock }) }}
           </text>
           <text v-if="selectedText" class="text-slate-950 text-xs font-medium">
-            已选：{{ selectedText }}
+            {{ t('sku.selected', { text: selectedText }) }}
           </text>
         </view>
 
@@ -204,7 +210,7 @@ function onQuantityBlur(e: any) {
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <text class="text-slate-950 text-base font-medium">购买数量</text>
+            <text class="text-slate-950 text-base font-medium">{{ $t('sku.quantity') }}</text>
             <view class="flex items-center bg-slate-100 rounded-2 overflow-hidden">
               <view
                 class="h-6 w-6 px-1 flex items-center justify-center"
@@ -245,7 +251,7 @@ function onQuantityBlur(e: any) {
       <view class="shrink-0 px-4 pt-4.5 border-t border-solid border-slate-50 pb-safe">
         <slot>
           <view class="bg-brand rounded-full py-3.5 flex items-center justify-center" @tap="close">
-            <text class="text-white text-base font-bold">确认</text>
+            <text class="text-white text-base font-bold">{{ $t('sku.confirm') }}</text>
           </view>
         </slot>
       </view>

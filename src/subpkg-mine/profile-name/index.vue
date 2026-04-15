@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import { userApi } from '@/api';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { useFetch } from '@/hooks/useRequest';
@@ -8,6 +9,7 @@ import { useUserStore } from '@/store';
 
 const userStore = useUserStore();
 const { data: detailedUser, send: refreshProfile } = useFetch(userApi.getProfile(), false);
+const { t } = useI18n();
 
 const user = computed(() => detailedUser.value?.user ?? userStore.profile);
 const nickname = ref('');
@@ -38,7 +40,7 @@ async function handleSave() {
 
   const trimmedName = nickname.value.trim();
   if (!trimmedName) {
-    uni.showToast({ title: '请输入昵称', icon: 'none' });
+    uni.showToast({ title: t('profile.enterNickname'), icon: 'none' });
     return;
   }
 
@@ -55,12 +57,12 @@ async function handleSave() {
       })
       .send();
     userStore.setProfile(result);
-    uni.showToast({ title: '昵称已更新', icon: 'success' });
+    uni.showToast({ title: t('profile.updated'), icon: 'success' });
     setTimeout(() => {
       uni.navigateBack();
     }, 500);
   } catch {
-    uni.showToast({ title: '昵称更新失败，请重试', icon: 'none' });
+    uni.showToast({ title: t('profile.updateFailed'), icon: 'none' });
   } finally {
     submitting.value = false;
   }
@@ -75,8 +77,8 @@ async function handleSave() {
         v-model="nickname"
         type="nickname"
         class="h-14 px-4 text-base text-slate-900"
-        maxlength="24"
-        placeholder="请输入昵称"
+        :maxlength="24"
+        :placeholder="$t('profile.enterNickname')"
         placeholder-style="color: #94a3b8"
         confirm-type="done"
       />
@@ -86,8 +88,8 @@ async function handleSave() {
         v-model="nickname"
         type="text"
         class="h-14 px-4 text-base text-slate-900"
-        maxlength="24"
-        placeholder="请输入昵称"
+        :maxlength="24"
+        :placeholder="$t('profile.enterNickname')"
         placeholder-style="color: #94a3b8"
         confirm-type="done"
       />
@@ -95,7 +97,7 @@ async function handleSave() {
     </view>
 
     <text class="mt-3 px-1 block text-xs leading-5 text-slate-400">
-      微信小程序内可直接使用系统提供的昵称填写能力。
+      {{ $t('profile.wechatHint') }}
     </text>
 
     <view class="mt-5">
@@ -105,7 +107,7 @@ async function handleSave() {
         @tap="handleSave"
       >
         <text class="text-base font-medium text-white">
-          {{ submitting ? '保存中...' : '保存昵称' }}
+          {{ submitting ? $t('profile.saving') : $t('profile.save') }}
         </text>
       </view>
     </view>

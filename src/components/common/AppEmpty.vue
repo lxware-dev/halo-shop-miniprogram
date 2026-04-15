@@ -1,23 +1,20 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
 
-const props = withDefaults(
-  defineProps<{
-    text?: string;
-    subtext?: string;
-    image?: string;
-    ctaText?: string;
-    ctaUrl?: string;
-  }>(),
-  {
-    text: '暂无数据',
-    type: 'generic',
-  },
-);
-
+const props = defineProps<{
+  text?: string;
+  subtext?: string;
+  image?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+}>();
 const emit = defineEmits<{
   cta: [];
 }>();
+const { t } = useI18n();
+const resolvedText = computed(() => props.text ?? t('empty.default'));
 
 function onCta() {
   if (props.ctaUrl) {
@@ -38,7 +35,7 @@ function onCta() {
     />
 
     <view class="flex flex-col items-center gap-2 text-center">
-      <text class="text-slate-700 text-base font-medium">{{ text }}</text>
+      <text class="text-slate-700 text-base font-medium">{{ resolvedText }}</text>
       <text v-if="subtext" class="text-slate-400 text-xs leading-relaxed px-4">{{ subtext }}</text>
     </view>
 

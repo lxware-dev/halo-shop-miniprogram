@@ -22,6 +22,7 @@ import { formatImageUrlWithThumbnail, formatShareImageUrl } from '@/helpers/imag
 import { ICON_COLOR } from '@/helpers/icon';
 import { isExternalProduct, openExternalProduct } from '@/helpers/product';
 import { useTabBar } from '@/composables/useTabBar';
+import { useI18n } from 'vue-i18n';
 
 const BACKEND_FIRST_PAGE = 1;
 const MAX_QUICK_ENTRIES = 8;
@@ -30,6 +31,7 @@ const appConfig = useAppConfig();
 const { width } = useMenuButton();
 const { totalHeight } = useTabBar();
 const { addToCart } = useCart();
+const { t } = useI18n();
 const contentPaddingBottom = computed(() => `${totalHeight + 8}px`);
 
 function truncateShareText(text: string, maxLength: number) {
@@ -247,7 +249,7 @@ function navigateByLink(linkType?: string, linkValue?: string, title?: string) {
       }
       if (HTTP_LINK_REGEXP.test(value)) {
         uni.showToast({
-          title: '请配置 H5 承载页后再跳转',
+          title: t('home.missingWebview'),
           icon: 'none',
           duration: 2000,
         });
@@ -307,7 +309,7 @@ function onQuickEntry(entry: QuickEntry) {
               color: ICON_COLOR.muted,
             }"
           />
-          <text class="text-slate-400 text-sm flex-1">搜索商品</text>
+          <text class="text-slate-400 text-sm flex-1">{{ $t('home.searchPlaceholder') }}</text>
         </view>
       </view>
     </view>
@@ -342,7 +344,9 @@ function onQuickEntry(entry: QuickEntry) {
                   {{ banner.description }}
                 </text>
                 <view class="flex items-center bg-white rounded-full px-3 py-1.5 self-start">
-                  <text class="text-brand text-xs font-bold text-center">立即选购</text>
+                  <text class="text-brand text-xs font-bold text-center">
+                    {{ $t('home.shopNow') }}
+                  </text>
                 </view>
               </view>
             </view>
@@ -398,7 +402,7 @@ function onQuickEntry(entry: QuickEntry) {
       </view>
       <view>
         <view class="mb-4">
-          <text class="text-slate-950 font-bold">为您推荐</text>
+          <text class="text-slate-950 font-bold">{{ $t('home.recommendTitle') }}</text>
         </view>
 
         <AppLoading v-if="showProductsLoading" variant="product" :rows="2" />
@@ -418,14 +422,14 @@ function onQuickEntry(entry: QuickEntry) {
           </view>
 
           <view v-else class="flex flex-col items-center py-10">
-            <text class="text-slate-400 text-sm">暂无商品</text>
+            <text class="text-slate-400 text-sm">{{ $t('home.noProducts') }}</text>
           </view>
 
           <AppListFooter
             :loading="isProductsLoadingMore"
             :has-more="!isLastPage"
             :total="productTotal"
-            no-more-text="— 已经到底了 —"
+            :no-more-text="$t('home.noMore')"
           />
         </template>
       </view>

@@ -5,6 +5,7 @@ import { getCurrentPageUrl } from '@/helpers/auth';
 import { useAuth } from '@/hooks/useAuth';
 import { sendRequest } from '@/hooks/useRequest';
 import type { CartItemResponse } from '@halo-dev/api-client';
+import { translate } from '@/locales';
 
 export function useCart() {
   const cartStore = useCartStore();
@@ -28,7 +29,7 @@ export function useCart() {
     }
     await sendRequest(cartApi.addCartItem({ productVariantId, quantity }));
     await fetchCart();
-    uni.showToast({ title: '已加入购物车', icon: 'success', duration: 1500 });
+    uni.showToast({ title: translate('order.addedToCart'), icon: 'success', duration: 1500 });
     return true;
   }
 

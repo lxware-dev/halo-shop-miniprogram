@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import { getLegalDocumentTitle, getLegalDocumentUrl, isLegalDocumentKey } from '@/helpers/legal';
 
 const webViewUrl = ref('');
-const emptyMessage = ref('当前页面暂未配置链接');
+const { t } = useI18n();
+const emptyMessage = ref(t('webview.empty'));
 
 onLoad((options) => {
   const key = typeof options?.key === 'string' ? options.key : '';
   if (!isLegalDocumentKey(key)) {
-    emptyMessage.value = '页面参数无效';
-    uni.setNavigationBarTitle({ title: '网页详情' });
+    emptyMessage.value = t('webview.invalidParams');
+    uni.setNavigationBarTitle({ title: t('webview.title') });
     return;
   }
 
