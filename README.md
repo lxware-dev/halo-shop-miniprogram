@@ -1,6 +1,6 @@
 # Halo 商城小程序
 
-基于 [Halo 商城版](https://www.lxware.cn/halo) 的电商小程序，使用 Vue 3 + uni-app 构建，支持微信小程序及 H5 等多端。
+基于 [Halo 商城版](https://www.lxware.cn/halo) 的电商小程序，使用 Vue 3 + uni-app 构建，支持微信小程序。
 
 [使用文档](./docs/README.md)
 
