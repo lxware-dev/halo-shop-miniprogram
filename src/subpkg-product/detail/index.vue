@@ -381,7 +381,7 @@ function onBannerChange(e: { detail: { current: number } }) {
             $t('product.freeShipping')
           }}</text>
         </view>
-        <view class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">
+        <view v-if="false" class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">
           <text class="text-brand text-xs font-bold tracking-[1rpx]">{{
             $t('product.returnPolicy')
           }}</text>
