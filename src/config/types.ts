@@ -50,10 +50,7 @@ export interface AppConfig {
      * 应用 Logo 路径。
      */
     logo: string;
-    /**
-     * 关于我们中展示的版本号。
-     */
-    version: string;
+
     /**
      * 关于我们中的品牌介绍文案。
      */

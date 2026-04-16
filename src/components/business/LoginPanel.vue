@@ -2,8 +2,9 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { useI18n } from 'vue-i18n';
+import AppLogo from '@/components/common/AppLogo.vue';
 import { ICON_COLOR } from '@/helpers/icon';
-import { formatImageUrlWithThumbnail, getThumbnailUrl } from '@/helpers/image';
+import { formatImageUrlWithThumbnail } from '@/helpers/image';
 import { openLegalDocument } from '@/helpers/legal';
 import { useAppConfig } from '@/config';
 import { useAuth } from '@/hooks/useAuth';
@@ -277,17 +278,7 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
         class="flex flex-col items-center gap-3"
         :class="props.mode === 'drawer' ? 'py-2' : 'px-6 pt-6 pb-5'"
       >
-        <view
-          class="w-16 h-16 rounded-4 flex items-center justify-center bg-brand overflow-hidden shadow-brand"
-        >
-          <image
-            v-if="appConfig.app.logo"
-            :src="getThumbnailUrl(appConfig.app.logo, 'S')"
-            mode="aspectFit"
-            class="w-full h-full"
-          />
-          <TIcon v-else name="shop" v-bind="{ size: '68rpx', color: ICON_COLOR.inverse }" />
-        </view>
+        <AppLogo width="128rpx" />
         <text class="text-slate-950 text-xl font-bold">{{ appConfig.app.name }}</text>
       </view>
 

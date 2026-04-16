@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import AppLogo from '@/components/common/AppLogo.vue';
 import { useAppConfig } from '@/config';
 import { isLegalDocumentConfigured, openLegalDocument } from '@/helpers/legal';
 import type { LegalDocumentKey } from '@/config/types';
@@ -9,7 +10,6 @@ import type { LegalDocumentKey } from '@/config/types';
 const appConfig = useAppConfig();
 const {
   name: appName,
-  version: appVersion,
   brandDescription,
   companyName,
   copyrightOwner,
@@ -40,7 +40,7 @@ const legalItems = computed<LegalItem[]>(() => [
   {
     key: 'platformRules',
     label: t('legal.platformRules'),
-    icon: 'shield',
+    icon: 'view-list',
     configured: isLegalDocumentConfigured('platformRules'),
   },
   {
@@ -75,19 +75,10 @@ function onLegalTap(item: LegalItem) {
 <template>
   <view class="flex flex-col min-h-screen bg-bg-page">
     <view class="bg-white px-8 py-8 flex flex-col items-center gap-4">
-      <view
-        class="w-24 h-24 rounded-4 flex items-center justify-center bg-brand overflow-hidden shadow-brand"
-      >
-        <TIcon name="shop" v-bind="{ size: '80rpx', color: '#ffffff' }" />
-      </view>
+      <AppLogo width="192rpx" />
 
       <view class="flex flex-col items-center gap-2">
         <text class="text-slate-950 text-2xl font-bold -tracking-.15">{{ appName }}</text>
-        <view class="px-3 py-1 rounded-full bg-slate-100">
-          <text class="text-slate-500 text-sm">{{
-            $t('about.version', { version: appVersion })
-          }}</text>
-        </view>
       </view>
     </view>
 

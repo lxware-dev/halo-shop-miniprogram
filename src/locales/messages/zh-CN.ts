@@ -264,7 +264,6 @@ const zhCN = {
   'profile.saving': '保存中...',
   'profile.save': '保存昵称',
 
-  'about.version': '版本号 {version}',
   'about.brandIntro': '品牌介绍',
 
   'help.title': '您好，请问有什么可以帮您？',

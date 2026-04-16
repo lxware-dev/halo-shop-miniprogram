@@ -264,7 +264,6 @@ const enUS = {
   'profile.saving': 'Saving...',
   'profile.save': 'Save nickname',
 
-  'about.version': 'Version {version}',
   'about.brandIntro': 'About the brand',
 
   'help.title': 'Hello, how can we help you?',
