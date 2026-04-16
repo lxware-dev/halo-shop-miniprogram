@@ -1,21 +1,208 @@
-MIT License
+Halo Shop Mini Program Source-Available License
+Halo 商城小程序源码可见许可证
 
 Copyright (c) 2026 凌霞（深圳）软件有限公司
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Last updated / 更新日期: 2026-04-16
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+English
+
+This repository is source-available software. It is not licensed under an
+OSI-approved open source license.
+
+By accessing, copying, modifying, deploying, or distributing any part of this
+repository, you agree to the terms below.
+
+1. Definitions
+
+"Software" means the source code, assets, configuration samples, and
+documentation published in this repository.
+
+"Halo Shop Edition" means the paid Halo mall product, or another product or
+service expressly authorized in writing by the copyright holder with equivalent
+scope.
+
+"Production Use" means making the Software available to actual end users,
+customers, merchants, or the general public in a live, usable environment,
+including a deployed WeChat Mini Program or any equivalent client.
+
+"Authorized Customer" means a person or entity that has lawfully obtained a
+valid license to use Halo Shop Edition.
+
+"Authorized Developer" means an employee or contractor acting on behalf of an
+Authorized Customer within the scope of that customer's valid Halo Shop Edition
+license.
+
+2. Permitted evaluation and development use
+
+Any person may view, download, copy, run, and modify the Software solely for
+evaluation, security review, local development, testing, demonstration, or
+client preview in a non-production environment.
+
+3. Production use restriction
+
+Production Use is permitted only by:
+
+(a) an Authorized Customer; or
+(b) an Authorized Developer acting for an Authorized Customer.
+
+Any person who does not have a valid Halo Shop Edition license may not use the
+Software for Production Use.
+
+4. Customer modification and self-use
+
+An Authorized Customer and its Authorized Developers may copy, modify, build,
+deploy, and use the Software as a template for that Authorized Customer's own
+projects and environments, to the extent reasonably necessary to develop, test,
+operate, and maintain one or more client applications that integrate with that
+Authorized Customer's valid Halo Shop Edition environment.
+
+5. No redistribution or resale
+
+Except as expressly permitted by this license, you may not publish, sublicense,
+sell, assign, transfer, distribute, or make available the Software or any
+modified version of the Software to any third party.
+
+For clarity, the following are not permitted without prior written permission
+from the copyright holder:
+
+(a) redistributing this repository or a fork of it;
+(b) providing the Software to any third party as a reusable source-code
+deliverable, template, starter, or toolkit;
+(c) reselling or relicensing the Software;
+(d) offering the Software, or a substantially similar derivative of it, as a
+competing product.
+
+6. Modification restrictions
+
+You may modify the Software for the permitted uses described in this license.
+You may not remove, bypass, or circumvent license checks, payment prompts,
+authorization logic, attribution notices, or technical measures that protect
+paid products or services of the copyright holder or its affiliates.
+
+7. Separate products and services
+
+This license applies only to the Software published in this repository. It does
+not grant any right to use Halo Shop Edition server software, paid plugins,
+themes, cloud services, APIs requiring separate authorization, trademarks, or
+any other separately licensed product or service.
+
+8. Trademark reservation
+
+This license does not grant any permission to use the trade names, trademarks,
+service marks, logos, or product names of the copyright holder or its
+affiliates, except as reasonably necessary to describe compatibility with Halo
+Shop Edition in a truthful manner.
+
+9. Compliance with law and platform rules
+
+You must comply with applicable law and binding platform rules when using the
+Software. This license does not grant any right to use the Software in a manner
+that infringes third-party rights or violates platform requirements.
+
+10. Termination
+
+Any right granted by this license terminates automatically if you violate this
+license. Upon termination, you must stop using the Software and delete all
+copies in your possession or control, except to the extent retention is
+required by law.
+
+11. Warranty disclaimer
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT.
+
+12. Limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OF OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+13. Governing law
+
+This license shall be governed by the laws of the People's Republic of China,
+without regard to conflict-of-law rules. Any dispute arising from or in
+connection with this license or the Software shall be submitted to the court
+with jurisdiction where the copyright holder is located, unless applicable law
+requires otherwise.
+
+中文
+
+本仓库采用源码可见许可，而非 OSI 认可的开源许可证。
+
+任何人访问、复制、修改、部署或传播本仓库的任何内容，即视为同意接受以下条款约束。
+
+1. 定义
+
+“本软件”是指本仓库中发布的源代码、资源文件、配置示例和文档。
+
+“Halo 商城版”是指收费的 Halo 商城产品，或著作权人书面明确授权且授权范围等同的其他产品或服务。
+
+“生产使用”是指在真实、可用的线上环境中向终端用户、客户、商家或社会公众提供本软件，包括已部署的微信小程序或其他同类客户端。
+
+“获授权客户”是指已合法取得 Halo 商城版有效使用授权的个人、团队或实体。
+
+“获授权开发者”是指代表获授权客户，在其有效 Halo 商城版授权范围内从事开发、部署或维护工作的员工或受托开发者。
+
+2. 允许的评估与开发使用
+
+任何人均可仅为评估、安全审查、本地开发、测试、演示或客户预览之目的，在非生产环境中查看、下载、复制、运行和修改本软件。
+
+3. 生产使用限制
+
+只有下列主体可以进行生产使用：
+
+(a) 获授权客户；或
+(b) 代表获授权客户行事的获授权开发者。
+
+未持有有效 Halo 商城版授权的任何主体，不得将本软件用于生产使用。
+
+4. 客户二次修改与自行使用
+
+获授权客户及其获授权开发者，可以在合理必要的范围内复制、修改、构建、部署和使用本软件，并可将本软件作为该获授权客户自身项目和环境的模板，用于开发、测试、运行和维护一个或多个与该客户合法 Halo 商城版环境集成的客户端应用。
+
+5. 禁止再分发或转售
+
+除本许可证明确允许的情形外，任何人不得向任何第三方发布、分许可、出售、转让、分发或以其他方式提供本软件或其修改版本。
+
+为免歧义，未经著作权人事先书面许可，以下行为均不被允许：
+
+(a) 再分发本仓库或其 fork；
+(b) 将本软件作为可复用的源代码交付物、模板、脚手架或工具包提供给任何第三方；
+(c) 转售或再许可本软件；
+(d) 将本软件或其实质近似的衍生版本作为竞品对外提供。
+
+6. 修改限制
+
+你可以在本许可证允许的范围内修改本软件，但不得移除、绕过或规避与授权校验、付费提示、鉴权逻辑、归属标识或保护著作权人及其关联方付费产品或服务相关的技术措施。
+
+7. 独立产品与服务
+
+本许可证仅适用于本仓库中发布的软件内容。它不授予你使用 Halo 商城版服务端、收费插件、主题、云服务、需要单独授权的接口、商标，或其他任何单独授权产品或服务的权利。
+
+8. 商标保留
+
+本许可证不授予你使用著作权人或其关联方商号、商标、服务标志、Logo 或产品名称的许可，但为真实描述与 Halo 商城版兼容性所合理必要的使用除外。
+
+9. 遵守法律与平台规则
+
+你在使用本软件时必须遵守适用法律及具有约束力的平台规则。本许可证不授予你以侵犯第三方权利或违反平台要求的方式使用本软件的权利。
+
+10. 终止
+
+如你违反本许可证的任何条款，本许可证授予你的权利将自动终止。终止后，你应立即停止使用本软件，并删除你占有或控制下的全部副本；法律另有强制要求的除外。
+
+11. 无担保声明
+
+本软件按“现状”提供，不附带任何明示或默示保证，包括但不限于适销性、特定用途适用性、权属及不侵权保证。
+
+12. 责任限制
+
+在适用法律允许的最大范围内，无论基于合同、侵权或其他任何法律依据，著作权人或版权持有人均不对因本软件或其使用、无法使用或其他相关行为而产生的任何索赔、损失或责任承担责任。
+
+13. 适用法律
+
+本许可证适用中华人民共和国法律，但不包括其冲突规范。因本许可证或本软件引起或与之相关的任何争议，除非适用法律另有强制规定，应提交至著作权人所在地有管辖权的人民法院解决。
