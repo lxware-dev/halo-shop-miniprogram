@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { computed, ref } from 'vue';
-import AppContactButton from '@/components/common/AppContactButton.vue';
 import { useAppConfig } from '@/config';
 import type { HelpCenterFaqItem } from '@/config/types';
 
 const appConfig = useAppConfig();
-const { contactServiceEnabled, helpCenterFaqs } = appConfig.business;
+const { helpCenterFaqs } = appConfig.business;
 
 interface FaqItem {
   question: string;
@@ -103,25 +102,6 @@ function getHighlightSegments(text: string): HighlightSegment[] {
           placeholder-style="color: #94a3b8"
         />
       </view>
-      <AppContactButton
-        v-if="contactServiceEnabled"
-        class="flex items-center justify-between rounded-2 border border-solid border-brand/10 bg-brand/5 px-4 py-4"
-      >
-        <view class="flex items-center gap-3 min-w-0">
-          <view
-            class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center shrink-0"
-          >
-            <TIcon name="service" v-bind="{ size: '38rpx', color: '#ee2b2b' }" />
-          </view>
-          <view class="flex flex-col items-start min-w-0">
-            <text class="text-slate-950 text-sm font-medium leading-5">{{
-              $t('help.contact')
-            }}</text>
-            <text class="text-slate-500 text-xs leading-4">{{ $t('help.contactDesc') }}</text>
-          </view>
-        </view>
-        <TIcon name="chevron-right" v-bind="{ size: '28rpx', color: '#94a3b8' }" />
-      </AppContactButton>
     </view>
 
     <view class="mt-2 bg-white px-4 py-2 flex-1">

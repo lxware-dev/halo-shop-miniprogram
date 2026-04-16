@@ -47,7 +47,9 @@ cp src/config/app.config.json src/config/app.config.local.json
 | 字段                          | 说明                                       |
 | ----------------------------- | ------------------------------------------ |
 | `app.name`                    | 商城名称，显示于登录页、关于我们等处       |
+| `app.nameFontSize`            | 商城名称字号，建议填写 `rpx`               |
 | `app.logo`                    | Logo 路径，可为本地路径或完整 URL          |
+| `app.logoWidth`               | Logo 显示宽度，建议填写 `rpx`              |
 | `halo.baseURL`                | Halo 服务根地址，**必填**                  |
 | `auth.loginMethods.primary`   | 主要登录方式，需与 Halo 后台开启的能力一致 |
 | `auth.loginMethods.supported` | 可切换的登录方式列表                       |
@@ -58,7 +60,9 @@ cp src/config/app.config.json src/config/app.config.local.json
 {
   "app": {
     "name": "你的商城名称",
-    "logo": "/static/logo.png"
+    "nameFontSize": "48rpx",
+    "logo": "/static/logo.png",
+    "logoWidth": "160rpx"
   },
   "halo": {
     "baseURL": "https://your-halo.example.com"
@@ -74,6 +78,8 @@ cp src/config/app.config.json src/config/app.config.local.json
 
 > [!TIP]
 > 以上仅列出快速启动所需的核心字段。完整配置项（品牌信息、货币符号、客服入口、FAQ 等）请参阅 [config.md](./config.md)。
+
+如果你更换了品牌 Logo，发现显示偏大、偏小，或应用标题视觉不协调，通常只需要调整 `app.logoWidth` 和 `app.nameFontSize`，无需修改页面代码。
 
 ### manifest.json
 

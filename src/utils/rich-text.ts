@@ -1,4 +1,4 @@
-import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { formatImageUrl, formatImageUrlWithThumbnail } from '@/helpers/image';
 
 /**
  * rich-text node type definitions
@@ -236,6 +236,7 @@ const TRUSTED_TAGS = new Set([
   'span',
   'strong',
   'sub',
+  'source',
   'sup',
   'table',
   'tbody',
@@ -245,18 +246,21 @@ const TRUSTED_TAGS = new Set([
   'thead',
   'tr',
   'ul',
+  'video',
 ]);
 
 // Extra allowed attributes for each tag beyond class/style
 const EXTRA_ATTRS: Record<string, Set<string>> = {
   a: new Set(['href', 'target']),
   img: new Set(['src', 'alt', 'width', 'height']),
+  source: new Set(['src', 'type']),
   col: new Set(['span', 'width']),
   colgroup: new Set(['span', 'width']),
   td: new Set(['colspan', 'rowspan', 'height', 'width']),
   th: new Set(['colspan', 'rowspan', 'height', 'width']),
   ol: new Set(['start', 'type']),
   table: new Set(['width']),
+  video: new Set(['src', 'poster', 'controls', 'autoplay', 'loop', 'muted']),
 };
 
 const GLOBAL_ATTRS = new Set(['class', 'style']);
@@ -267,7 +271,13 @@ function filterRawAttrs(tagName: string, rawAttrs: RawAttr[]): Record<string, st
   for (const { name, value } of rawAttrs) {
     if (GLOBAL_ATTRS.has(name) || extra?.has(name)) {
       result[name] =
-        tagName === 'img' && name === 'src' ? formatImageUrlWithThumbnail(value, 'L') : value;
+        tagName === 'img' && name === 'src'
+          ? formatImageUrlWithThumbnail(value, 'L')
+          : tagName === 'video' && (name === 'src' || name === 'poster')
+            ? formatImageUrl(value)
+            : tagName === 'source' && name === 'src'
+              ? formatImageUrl(value)
+              : value;
     }
   }
   return Object.keys(result).length ? result : undefined;
@@ -282,7 +292,45 @@ function filterRawAttrs(tagName: string, rawAttrs: RawAttr[]): Record<string, st
  */
 export type RichContentBlock =
   | { type: 'rich'; nodes: RichTextNode[] }
-  | { type: 'image'; src: string; alt?: string };
+  | {
+      type: 'image';
+      src: string;
+      alt?: string;
+      wrapperStyle?: string;
+      wrapperClass?: string;
+      contentType?: string;
+    }
+  | {
+      type: 'video';
+      src: string;
+      poster?: string;
+      wrapperStyle?: string;
+      wrapperClass?: string;
+      contentType?: string;
+    };
+
+function pickAttr(rawAttrs: RawAttr[], name: string): string | undefined {
+  return rawAttrs.find((attr) => attr.name === name)?.value;
+}
+
+function getMediaWrapperAttrs(attrs: Record<string, string> | undefined) {
+  return {
+    wrapperStyle: attrs?.['data-wrapper-style'],
+    wrapperClass: attrs?.['data-wrapper-class'],
+    contentType: attrs?.['data-content-type'],
+  };
+}
+
+function resolveVideoSrc(node: RichTextElementNode): string {
+  const directSrc = node.attrs?.src;
+  if (directSrc) {
+    return directSrc;
+  }
+  const sourceNode = node.children?.find(
+    (child): child is RichTextElementNode => child.type !== 'text' && child.name === 'source',
+  );
+  return sourceNode?.attrs?.src ?? '';
+}
 
 /**
  * Parse an HTML string into an array of mixed content blocks.
@@ -308,10 +356,22 @@ export function htmlToContentBlocks(html: string): RichContentBlock[] {
     if (node.type !== 'text' && (node as RichTextElementNode).name === 'img') {
       flushRich();
       const imgNode = node as RichTextElementNode;
+      const wrapperAttrs = getMediaWrapperAttrs(imgNode.attrs);
       blocks.push({
         type: 'image',
         src: imgNode.attrs?.src ?? '',
         alt: imgNode.attrs?.alt,
+        ...wrapperAttrs,
+      });
+    } else if (node.type !== 'text' && (node as RichTextElementNode).name === 'video') {
+      flushRich();
+      const videoNode = node as RichTextElementNode;
+      const wrapperAttrs = getMediaWrapperAttrs(videoNode.attrs);
+      blocks.push({
+        type: 'video',
+        src: resolveVideoSrc(videoNode),
+        poster: videoNode.attrs?.poster,
+        ...wrapperAttrs,
       });
     } else {
       richBuffer.push(node);
@@ -334,11 +394,13 @@ export function htmlToRichTextNodes(html: string): RichTextNode[] {
   }
 
   interface StackFrame {
+    tagName: string;
     trusted: boolean;
     children: RichTextNode[];
+    rawAttrs?: RawAttr[];
   }
 
-  const frameStack: StackFrame[] = [{ trusted: true, children: [] }];
+  const frameStack: StackFrame[] = [{ tagName: '__root__', trusted: true, children: [] }];
 
   /** Return the children of the nearest trusted frame so nodes can be mounted in the correct place */
   function currentChildren(): RichTextNode[] {
@@ -350,6 +412,16 @@ export function htmlToRichTextNodes(html: string): RichTextNode[] {
     return frameStack[0].children;
   }
 
+  function currentMediaWrapper(): StackFrame | undefined {
+    for (let i = frameStack.length - 1; i >= 0; i--) {
+      const frame = frameStack[i];
+      if (!frame.trusted && frame.tagName === 'figure') {
+        return frame;
+      }
+    }
+    return undefined;
+  }
+
   htmlParser(html, {
     start(tagName, rawAttrs, unary) {
       const trusted = TRUSTED_TAGS.has(tagName);
@@ -357,6 +429,24 @@ export function htmlToRichTextNodes(html: string): RichTextNode[] {
       const attrs = filterRawAttrs(tagName, rawAttrs);
       if (attrs) {
         node.attrs = attrs;
+      }
+
+      if (tagName === 'img' || tagName === 'video') {
+        const wrapper = currentMediaWrapper();
+        if (wrapper?.rawAttrs?.length) {
+          node.attrs = {
+            ...(node.attrs ?? {}),
+            ...(pickAttr(wrapper.rawAttrs, 'style')
+              ? { 'data-wrapper-style': pickAttr(wrapper.rawAttrs, 'style')! }
+              : {}),
+            ...(pickAttr(wrapper.rawAttrs, 'class')
+              ? { 'data-wrapper-class': pickAttr(wrapper.rawAttrs, 'class')! }
+              : {}),
+            ...(pickAttr(wrapper.rawAttrs, 'data-content-type')
+              ? { 'data-content-type': pickAttr(wrapper.rawAttrs, 'data-content-type')! }
+              : {}),
+          };
+        }
       }
 
       if (trusted) {
@@ -369,7 +459,12 @@ export function htmlToRichTextNodes(html: string): RichTextNode[] {
           node.children = children;
         }
         // Untrusted tag: push it onto the stack, but point its children to the parent's trusted children for passthrough rendering
-        frameStack.push({ trusted, children: trusted ? children : currentChildren() });
+        frameStack.push({
+          tagName,
+          trusted,
+          children: trusted ? children : currentChildren(),
+          rawAttrs,
+        });
       }
     },
     end(_tagName) {

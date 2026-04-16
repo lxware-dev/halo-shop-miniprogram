@@ -1,3 +1,5 @@
+import { defineNamedMessage } from '../message';
+
 const enUS = {
   'common.loading': 'Loading...',
   'common.loadFailed': 'Failed to load. Please try again later.',
@@ -64,8 +66,8 @@ const enUS = {
   'product.customerService': 'Support',
   'product.cart': 'Cart',
 
-  'sku.stock': 'Stock {stock}',
-  'sku.selected': 'Selected: {text}',
+  'sku.stock': defineNamedMessage((named) => `Stock ${named('stock')}`),
+  'sku.selected': defineNamedMessage((named) => `Selected: ${named('text')}`),
   'sku.quantity': 'Quantity',
   'sku.confirm': 'Confirm',
 
@@ -81,11 +83,13 @@ const enUS = {
   'cart.done': 'Done',
   'cart.confirmTitle': 'Notice',
   'cart.removeConfirm': 'Delete this item?',
-  'cart.removeSelectedConfirm': 'Delete {count} selected item(s)?',
+  'cart.removeSelectedConfirm': defineNamedMessage(
+    (named) => `Delete ${named('count')} selected item(s)?`,
+  ),
   'cart.selectItemsFirst': 'Please select items first',
   'cart.selectItems': 'Please select items',
   'cart.noCheckoutItems': 'No items available for checkout',
-  'cart.maxQuantity': 'Each item can be added up to {max}',
+  'cart.maxQuantity': defineNamedMessage((named) => `Each item can be added up to ${named('max')}`),
   'cart.operationFailed': 'Operation failed',
   'cart.removeFailed': 'Delete failed',
   'cart.loadSkuFailed': 'Failed to load specs',
@@ -112,9 +116,9 @@ const enUS = {
   'checkout.standardShipping': 'Standard shipping',
   'checkout.remark': 'Order note',
   'checkout.remarkPlaceholder': 'Optional. Please confirm with the merchant first.',
-  'checkout.totalItems': '{count} item(s)',
+  'checkout.totalItems': defineNamedMessage((named) => `${named('count')} item(s)`),
   'checkout.totalAmount': 'Total:',
-  'checkout.discount': 'Saved {amount}',
+  'checkout.discount': defineNamedMessage((named) => `Saved ${named('amount')}`),
   'checkout.submit': 'Place order',
   'checkout.submitting': 'Submitting...',
 
@@ -124,11 +128,11 @@ const enUS = {
   'order.tab.pendingReceipt': 'To receive',
   'order.tab.completed': 'Completed',
   'order.emptyAll': 'No orders yet',
-  'order.emptyByTab': 'No {label} orders yet',
+  'order.emptyByTab': defineNamedMessage((named) => `No ${named('label')} orders yet`),
   'order.emptySubtitle': 'Pick something you love and place your first order.',
   'order.goShopping': 'Go shopping',
   'order.bottomReached': 'No more orders',
-  'order.itemCount': '{count} item(s)',
+  'order.itemCount': defineNamedMessage((named) => `${named('count')} item(s)`),
   'order.total': 'Total',
   'order.payNow': 'Pay now',
   'order.viewLogistics': 'Track package',
@@ -155,7 +159,9 @@ const enUS = {
   'order.notFound': 'Order not found',
   'order.productTotal': 'Items total',
   'order.freight': 'Shipping',
-  'order.shippingProgress': 'Your package is on the way. {carrier}: {trackingNumber}',
+  'order.shippingProgress': defineNamedMessage(
+    (named) => `Your package is on the way. ${named('carrier')}: ${named('trackingNumber')}`,
+  ),
 
   'order.status.cancelled': 'Cancelled',
   'order.status.cancelledSubtitle': 'This order was cancelled',
@@ -187,7 +193,7 @@ const enUS = {
   'payment.wechatPayDesc': 'Fast payment with your WeChat wallet',
   'payment.onlinePay': 'Online payment',
   'payment.pendingAmount': 'Amount due',
-  'payment.orderCode': 'Order code: {code}',
+  'payment.orderCode': defineNamedMessage((named) => `Order code: ${named('code')}`),
   'payment.selectMethod': 'Select payment method',
   'payment.noMethods': 'No payment methods available',
   'payment.recommended': 'Recommended',
@@ -198,7 +204,7 @@ const enUS = {
   'payment.invalidParams': 'Incomplete payment parameters. Please try again later.',
   'payment.initiateFailed': 'Failed to initiate payment. Please try again.',
   'payment.processing': 'Processing payment...',
-  'payment.payNow': 'Pay now {amount}',
+  'payment.payNow': defineNamedMessage((named) => `Pay now ${named('amount')}`),
 
   'login.agreementRequired': 'Please read and agree to the required agreements first',
   'login.phoneQuick': 'One-tap phone login',
@@ -268,8 +274,6 @@ const enUS = {
 
   'help.title': 'Hello, how can we help you?',
   'help.searchPlaceholder': 'Search FAQs',
-  'help.contact': 'Contact support',
-  'help.contactDesc': 'Online help for orders, shipping, and after-sales issues',
   'help.guessQuestion': 'You may ask',
   'help.notFound': 'No matching questions found',
   'help.notFoundDesc': 'Try another keyword or contact support directly',
@@ -350,7 +354,7 @@ const enUS = {
   'logistics.deliveryEstimateFallback': 'Expected tomorrow',
   'logistics.copied': 'Copied',
   'logistics.subscribeSuccess': 'Subscribed successfully',
-  'logistics.totalItems': '{count} item(s)',
+  'logistics.totalItems': defineNamedMessage((named) => `${named('count')} item(s)`),
   'logistics.copyTrackingNumber': 'Copy tracking no.',
   'logistics.orderTracking': 'Order tracking',
   'logistics.empty': 'No shipping information yet',

@@ -8,6 +8,8 @@ const props = defineProps<{
   className?: string;
 }>();
 
+const DEFAULT_MEDIA_WRAPPER_STYLE = 'display:flex;flex-direction:column;align-items:center;';
+
 const blocks = computed(() => htmlToContentBlocks(props.html));
 
 const allImages = computed(() =>
@@ -27,20 +29,38 @@ function previewImage(src: string) {
     current,
   });
 }
+
+function getMediaWrapperStyle(block: { wrapperStyle?: string }) {
+  return block.wrapperStyle?.trim() || DEFAULT_MEDIA_WRAPPER_STYLE;
+}
 </script>
 
 <template>
-  <view :class="className">
+  <view class="flex flex-col gap-2" :class="className">
     <template v-for="(block, idx) in blocks" :key="idx">
       <rich-text v-if="block.type === 'rich'" :nodes="block.nodes" class="block w-full" />
-      <image
+      <view
         v-else-if="block.type === 'image'"
-        :src="block.src"
-        mode="widthFix"
-        class="block w-full"
-        :alt="block.alt"
-        @tap="previewImage(block.src)"
-      />
+        class="w-full"
+        :class="block.wrapperClass"
+        :style="getMediaWrapperStyle(block)"
+      >
+        <image
+          :src="block.src"
+          mode="widthFix"
+          :alt="block.alt"
+          class="block max-w-full"
+          @tap="previewImage(block.src)"
+        />
+      </view>
+      <view
+        v-else-if="block.type === 'video'"
+        class="w-full"
+        :class="block.wrapperClass"
+        :style="getMediaWrapperStyle(block)"
+      >
+        <video :src="block.src" :poster="block.poster" controls class="w-full" />
+      </view>
     </template>
   </view>
 </template>

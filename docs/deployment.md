@@ -74,32 +74,13 @@ pnpm build:h5
 | 测试环境 | 独立 `baseURL`，独立小程序体验版；域名加入测试号白名单                                           |
 | 生产环境 | 使用正式 Halo 域名；含密钥的配置不提交仓库；可通过 CI 注入或私密变量生成 `app.config.local.json` |
 
-## 发布前检查清单
+## 构建完成后的下一步
 
-提交体验版或正式版前，请逐项核对：
+生成体验版或正式版之前，先确认当前 `halo.baseURL` 已切到线上 HTTPS 地址，并且微信公众平台已经配置好对应的 `request` 合法域名；如果页面里有外链图片，也要一并配置好 `downloadFile` 合法域名。同时，`auth.loginMethods` 需要与 Halo 后台实际开启的登录能力保持一致。
 
-**配置与网络**
+接着检查 `src/manifest.json` 中的版本号与 AppID 是否正确，确认主包和分包体积没有超出微信限制，再执行 `pnpm lint` 和 `pnpm type-check` 处理阻塞性问题。
 
-- [ ] `halo.baseURL` 为 **HTTPS**，与线上 Halo 一致。
-- [ ] 微信公众平台已配置 **request 合法域名**（与 `baseURL` 主机名一致）。
-- [ ] 图片等外链资源域名已按微信要求配置 **downloadFile** 合法域名。
-- [ ] `auth.loginMethods` 与 Halo 后台登录能力一致。
-
-**小程序包**
-
-- [ ] `src/manifest.json` 中的**版本号、AppID** 填写正确。
-- [ ] 主包与分包体积在微信限制范围内，未引入不必要的静态资源。
-
-**代码质量**
-
-- [ ] `pnpm lint` 与 `pnpm type-check` 无阻塞性问题。
-
-**业务与合规**
-
-- [ ] 用户协议、隐私政策等链接可正常访问（见 [config.md](./config.md)）。
-- [ ] 支付与登录在**真机**上已完整自测（见 [payments.md](./payments.md)）。
-
-完整的域名与公众平台配置清单见 [prepare-go-live.md](./prepare-go-live.md)。
+最后在真机上把登录、支付、协议链接等关键路径走一遍。做完这些后，就可以继续参考 [prepare-go-live.md](./prepare-go-live.md) 完成域名与公众平台配置，或直接按 [release.md](./release.md) 的流程上传版本。
 
 ## 相关文档
 

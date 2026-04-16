@@ -23,7 +23,7 @@
 | 配置参考 | [config.md](./config.md)                   | 配置文件详解、字段说明、最小示例          |
 | 构建部署 | [deployment.md](./deployment.md)           | 本地调试、生产构建、多环境管理            |
 | 业务接入 | [payments.md](./payments.md)               | 登录、微信支付、法务链接等                |
-| 上线准备 | [prepare-go-live.md](./prepare-go-live.md) | 生产域名、微信公众平台、合规清单          |
+| 上线准备 | [prepare-go-live.md](./prepare-go-live.md) | 生产域名、微信公众平台、合规准备          |
 | 发布上线 | [release.md](./release.md)                 | 上传版本、提交审核、正式发布              |
 | 常见问题 | [faq.md](./faq.md)                         | 问题排查与常见错误                        |
 

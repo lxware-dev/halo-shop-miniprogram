@@ -1,6 +1,7 @@
 import { createI18n } from 'vue-i18n';
 import type { AppConfig } from '@/config/types';
 import appConfigJson from 'virtual:app-config';
+import type { LocaleMessageValue } from './message';
 import zhCN from './messages/zh-CN';
 import enUS from './messages/en-US';
 
@@ -8,7 +9,7 @@ export const SUPPORTED_LOCALES = ['zh-CN', 'en-US'] as const;
 
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 export type MessageKey = keyof typeof zhCN;
-export type MessageSchema = Record<MessageKey, string>;
+export type MessageSchema = Record<MessageKey, LocaleMessageValue>;
 
 const LOCALE_STORAGE_KEY = 'halo-mall-locale';
 const FALLBACK_LOCALE: AppLocale = 'zh-CN';

@@ -1,3 +1,5 @@
+import { defineNamedMessage } from '../message';
+
 const zhCN = {
   'common.loading': '加载中...',
   'common.loadFailed': '加载失败，请稍后重试',
@@ -64,8 +66,8 @@ const zhCN = {
   'product.customerService': '客服',
   'product.cart': '购物车',
 
-  'sku.stock': '库存 {stock} 件',
-  'sku.selected': '已选：{text}',
+  'sku.stock': defineNamedMessage((named) => `库存 ${named('stock')} 件`),
+  'sku.selected': defineNamedMessage((named) => `已选：${named('text')}`),
   'sku.quantity': '购买数量',
   'sku.confirm': '确认',
 
@@ -81,11 +83,13 @@ const zhCN = {
   'cart.done': '完成',
   'cart.confirmTitle': '提示',
   'cart.removeConfirm': '确定要删除该商品吗？',
-  'cart.removeSelectedConfirm': '确定删除选中的 {count} 件商品吗？',
+  'cart.removeSelectedConfirm': defineNamedMessage(
+    (named) => `确定删除选中的 ${named('count')} 件商品吗？`,
+  ),
   'cart.selectItemsFirst': '请先选择商品',
   'cart.selectItems': '请选择商品',
   'cart.noCheckoutItems': '缺少可结算商品',
-  'cart.maxQuantity': '每件商品最多加 {max} 件',
+  'cart.maxQuantity': defineNamedMessage((named) => `每件商品最多加 ${named('max')} 件`),
   'cart.operationFailed': '操作失败',
   'cart.removeFailed': '删除失败',
   'cart.loadSkuFailed': '加载规格失败',
@@ -112,9 +116,9 @@ const zhCN = {
   'checkout.standardShipping': '标准配送',
   'checkout.remark': '订单备注',
   'checkout.remarkPlaceholder': '选填，请先和商家协商一致',
-  'checkout.totalItems': '共 {count} 件商品',
+  'checkout.totalItems': defineNamedMessage((named) => `共 ${named('count')} 件商品`),
   'checkout.totalAmount': '合计：',
-  'checkout.discount': '已优惠 {amount}',
+  'checkout.discount': defineNamedMessage((named) => `已优惠 ${named('amount')}`),
   'checkout.submit': '提交订单',
   'checkout.submitting': '提交中...',
 
@@ -124,11 +128,11 @@ const zhCN = {
   'order.tab.pendingReceipt': '待收货',
   'order.tab.completed': '已完成',
   'order.emptyAll': '还没有订单',
-  'order.emptyByTab': '暂无{label}的订单',
+  'order.emptyByTab': defineNamedMessage((named) => `暂无${named('label')}的订单`),
   'order.emptySubtitle': '去挑选心仪的商品，完成你的第一笔订单',
   'order.goShopping': '去购物',
   'order.bottomReached': '已经到底了',
-  'order.itemCount': '共 {count} 件商品',
+  'order.itemCount': defineNamedMessage((named) => `共 ${named('count')} 件商品`),
   'order.total': '合计',
   'order.payNow': '立即支付',
   'order.viewLogistics': '查看物流',
@@ -155,7 +159,9 @@ const zhCN = {
   'order.notFound': '订单不存在',
   'order.productTotal': '商品总额',
   'order.freight': '运费',
-  'order.shippingProgress': '您的包裹正在配送中，{carrier}：{trackingNumber}',
+  'order.shippingProgress': defineNamedMessage(
+    (named) => `您的包裹正在配送中，${named('carrier')}：${named('trackingNumber')}`,
+  ),
 
   'order.status.cancelled': '已取消',
   'order.status.cancelledSubtitle': '订单已取消',
@@ -187,7 +193,7 @@ const zhCN = {
   'payment.wechatPayDesc': '使用微信钱包极速支付',
   'payment.onlinePay': '在线支付',
   'payment.pendingAmount': '待支付金额',
-  'payment.orderCode': '订单编号: {code}',
+  'payment.orderCode': defineNamedMessage((named) => `订单编号: ${named('code')}`),
   'payment.selectMethod': '选择支付方式',
   'payment.noMethods': '暂无可用支付方式',
   'payment.recommended': '推荐',
@@ -198,7 +204,7 @@ const zhCN = {
   'payment.invalidParams': '支付参数不完整，请稍后重试',
   'payment.initiateFailed': '发起支付失败，请重试',
   'payment.processing': '支付处理中...',
-  'payment.payNow': '立即支付 {amount}',
+  'payment.payNow': defineNamedMessage((named) => `立即支付 ${named('amount')}`),
 
   'login.agreementRequired': '请先阅读并同意相关协议',
   'login.phoneQuick': '手机号一键登录',
@@ -268,8 +274,6 @@ const zhCN = {
 
   'help.title': '您好，请问有什么可以帮您？',
   'help.searchPlaceholder': '搜索常见问题',
-  'help.contact': '联系客服',
-  'help.contactDesc': '在线咨询订单、物流与售后问题',
   'help.guessQuestion': '猜你想问',
   'help.notFound': '未找到相关问题',
   'help.notFoundDesc': '试试更换关键词，或直接联系客服',
@@ -347,7 +351,7 @@ const zhCN = {
   'logistics.deliveryEstimateFallback': '预计明天送达',
   'logistics.copied': '已复制',
   'logistics.subscribeSuccess': '订阅成功',
-  'logistics.totalItems': '共{count}件商品',
+  'logistics.totalItems': defineNamedMessage((named) => `共${named('count')}件商品`),
   'logistics.copyTrackingNumber': '复制单号',
   'logistics.orderTracking': '订单追踪',
   'logistics.empty': '暂无物流信息',

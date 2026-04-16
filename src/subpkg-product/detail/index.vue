@@ -408,14 +408,14 @@ function onBannerChange(e: { detail: { current: number } }) {
         @tap="showSpecPanel = true"
       >
         <view class="flex items-center gap-2">
-          <text class="text-slate-400 text-sm w-7">{{ $t('product.selectLabel') }}</text>
+          <text class="text-slate-400 text-sm">{{ $t('product.selectLabel') }}</text>
           <text class="text-slate-950 text-sm font-medium">{{ selectedSpecText }}</text>
         </view>
         <TIcon name="chevron-right" v-bind="{ size: '28rpx', color: ICON_COLOR.muted }" />
       </view>
       <view v-if="product.specDefinition?.length" class="flex items-center justify-between py-4">
         <view class="flex items-center gap-2">
-          <text class="text-slate-400 text-sm w-7">{{ $t('product.specLabel') }}</text>
+          <text class="text-slate-400 text-sm">{{ $t('product.specLabel') }}</text>
           <text class="text-slate-950 text-sm font-medium flex-1">
             {{ product.specDefinition.map((d: SpecDefinitionPayload) => d.name).join('，') }}
           </text>

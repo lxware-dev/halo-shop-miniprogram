@@ -25,7 +25,9 @@
 {
   "app": {
     "name": "你的商城名称",
+    "nameFontSize": "48rpx",
     "logo": "/static/logo.png",
+    "logoWidth": "160rpx",
     "version": "1.0.0"
   },
   "halo": {
@@ -53,12 +55,17 @@
 | 字段                 | 说明                                               |
 | -------------------- | -------------------------------------------------- |
 | `name`               | 应用名称，显示于登录页、关于我们等处               |
+| `nameFontSize`       | 应用名称字号，建议填写 `rpx`，如 `48rpx`           |
 | `logo`               | Logo 地址，可为本地路径（`/static/...`）或完整 URL |
+| `logoWidth`          | Logo 显示宽度，建议填写 `rpx`，如 `160rpx`         |
 | `version`            | 关于我们等处展示的版本号                           |
 | `brandDescription`   | 品牌介绍文案                                       |
 | `companyName`        | 公司名称，用于关于我们页面                         |
 | `copyrightOwner`     | 版权所有者                                         |
 | `copyrightStartYear` | 版权起始年份                                       |
+
+> [!TIP]
+> 当你的品牌 Logo 比较扁、比较高，或左右留白较多时，优先通过 `app.logoWidth` 调整显示宽度；如果应用名称过长或品牌字重较强，可通过 `app.nameFontSize` 微调标题大小，而不必改代码。
 
 ### `halo` — Halo 服务连接
 

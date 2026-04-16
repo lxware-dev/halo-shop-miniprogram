@@ -2,15 +2,12 @@
 
 本文说明从**构建上传**到**提交审核、正式发布**的完整流程。平台规则以 [微信公众平台](https://mp.weixin.qq.com) 最新说明为准。
 
-## 上传前检查
+## 上传前先做什么
 
 > [!IMPORTANT]
-> 上传前请先完成 [prepare-go-live.md](./prepare-go-live.md) 中的所有准备工作。以下为最低核对项：
+> 开始上传前，请先完成 [prepare-go-live.md](./prepare-go-live.md) 中的生产环境与公众平台准备。
 
-- [ ] 已完成生产构建：`pnpm build:mp-weixin`（见 [deployment.md](./deployment.md)）。
-- [ ] `halo.baseURL`、登录方式、协议链接等均为**生产环境**配置。
-- [ ] 已在**真机**上验证核心路径：浏览商品 → 登录 → 下单 → 支付。
-- [ ] 小程序基本信息（名称、简介、类目、头像）已在公众平台填写完整，且与资质一致。
+先执行生产构建 `pnpm build:mp-weixin`（见 [deployment.md](./deployment.md)），然后再确认 `halo.baseURL`、登录方式、协议链接等都已经切到**生产环境**配置。接着在**真机**上再走一遍浏览商品、登录、下单、支付的核心路径，最后检查微信公众平台中的小程序名称、简介、类目、头像等信息已经填写完整并与资质一致。
 
 ## 版本管理
 
@@ -68,6 +65,6 @@
 ## 相关文档
 
 - [prepare-go-live.md](./prepare-go-live.md) — 上线前域名与公众平台准备
-- [deployment.md](./deployment.md) — 构建命令与检查清单
+- [deployment.md](./deployment.md) — 构建命令与发布前准备
 - [payments.md](./payments.md) — 登录与支付接入
 - [faq.md](./faq.md) — 常见问题排查
