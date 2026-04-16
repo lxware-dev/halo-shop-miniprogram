@@ -47,9 +47,17 @@ export interface AppConfig {
      */
     name: string;
     /**
+     * 应用名称标题字号，建议使用 `rpx`。
+     */
+    nameFontSize?: string;
+    /**
      * 应用 Logo 路径。
      */
     logo: string;
+    /**
+     * 应用 Logo 宽度，建议使用 `rpx`。
+     */
+    logoWidth?: string;
 
     /**
      * 关于我们中的品牌介绍文案。

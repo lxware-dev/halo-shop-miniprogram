@@ -185,6 +185,10 @@ const pagePanelBodyStyle = computed(() => {
   };
 });
 
+const appNameStyle = computed(() => ({
+  fontSize: appConfig.app.nameFontSize || '48rpx',
+}));
+
 const phoneQuickOpenType = computed(() => (agreed.value ? 'getPhoneNumber' : undefined));
 
 function getSecondaryMethodLabel(method: LoginMethod) {
@@ -278,8 +282,8 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
         class="flex flex-col items-center gap-3"
         :class="props.mode === 'drawer' ? 'py-2' : 'px-6 pt-6 pb-5'"
       >
-        <AppLogo width="128rpx" />
-        <text class="text-slate-950 text-xl font-bold">{{ appConfig.app.name }}</text>
+        <AppLogo />
+        <text class="text-slate-950 font-bold" :style="appNameStyle">{{ appConfig.app.name }}</text>
       </view>
 
       <view v-if="panelView === 'loading'" class="flex flex-col items-center gap-3 py-10 px-6">

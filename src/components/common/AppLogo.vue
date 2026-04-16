@@ -7,14 +7,12 @@ const props = withDefaults(
   defineProps<{
     width?: string;
   }>(),
-  {
-    width: '160rpx',
-  },
+  {},
 );
-
-const logoUrl = computed(() => formatShareImageUrl(useAppConfig().app.logo));
+const appConfig = useAppConfig();
+const logoUrl = computed(() => formatShareImageUrl(appConfig.app.logo));
 const logoStyle = computed(() => ({
-  width: props.width,
+  width: props.width || appConfig.app.logoWidth || '160rpx',
 }));
 </script>
 

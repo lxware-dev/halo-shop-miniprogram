@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Halo 商城",
+    "nameFontSize": "48rpx",
     "logo": "/static/logo.png",
+    "logoWidth": "160rpx",
     "brandDescription": "Halo 商城是一个专注于品质生活的电商平台，致力于为用户提供优质的商品和服务体验。我们汇聚了众多知名品牌和独立设计师，覆盖服饰、家居、美妆、数码等多个品类，助力每位用户找到心仪好物。",
     "companyName": "凌霞软件",
     "copyrightOwner": "凌霞软件",

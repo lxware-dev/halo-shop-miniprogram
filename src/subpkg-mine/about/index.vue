@@ -10,6 +10,7 @@ import type { LegalDocumentKey } from '@/config/types';
 const appConfig = useAppConfig();
 const {
   name: appName,
+  nameFontSize,
   brandDescription,
   companyName,
   copyrightOwner,
@@ -51,6 +52,9 @@ const legalItems = computed<LegalItem[]>(() => [
   },
 ]);
 
+const appNameStyle = computed(() => ({
+  fontSize: nameFontSize || '48rpx',
+}));
 const showBrandDescription = computed(() => !!brandDescription?.trim());
 const copyrightText = computed(() => {
   const owner = copyrightOwner?.trim();
@@ -75,10 +79,12 @@ function onLegalTap(item: LegalItem) {
 <template>
   <view class="flex flex-col min-h-screen bg-bg-page">
     <view class="bg-white px-8 py-8 flex flex-col items-center gap-4">
-      <AppLogo width="192rpx" />
+      <AppLogo />
 
       <view class="flex flex-col items-center gap-2">
-        <text class="text-slate-950 text-2xl font-bold -tracking-.15">{{ appName }}</text>
+        <text class="text-slate-950 font-bold -tracking-.15" :style="appNameStyle">
+          {{ appName }}
+        </text>
       </view>
     </view>
 
