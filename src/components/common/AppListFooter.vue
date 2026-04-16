@@ -1,5 +1,8 @@
 <script setup lang="ts">
-withDefaults(
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const props = withDefaults(
   defineProps<{
     loading?: boolean;
     hasMore?: boolean;
@@ -10,16 +13,17 @@ withDefaults(
     loading: false,
     hasMore: true,
     total: 0,
-    noMoreText: '— 没有更多了 —',
   },
 );
+const { t } = useI18n();
+const resolvedNoMoreText = computed(() => props.noMoreText ?? t('home.noMore'));
 </script>
 
 <template>
   <view class="flex items-center justify-center py-5">
-    <text v-if="loading" class="text-slate-400 text-xs">加载中...</text>
-    <text v-else-if="!hasMore && total > 0" class="text-slate-300 text-xs">
-      {{ noMoreText }}
+    <text v-if="props.loading" class="text-slate-400 text-xs">{{ $t('common.loading') }}</text>
+    <text v-else-if="!props.hasMore && props.total > 0" class="text-slate-300 text-xs">
+      {{ resolvedNoMoreText }}
     </text>
   </view>
 </template>

@@ -5,9 +5,11 @@ import { ICON_COLOR } from '@/helpers/icon';
 import { authApi } from '@/api';
 import { sendRequest } from '@/hooks/useRequest';
 import type { LoginMethodProps, LoginMethodEmits } from '@/types/auth';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps<LoginMethodProps>();
 const emit = defineEmits<LoginMethodEmits>();
+const { t } = useI18n();
 
 const username = ref('');
 const password = ref('');
@@ -15,15 +17,15 @@ const loading = ref(false);
 
 async function submit() {
   if (!props.agreed) {
-    uni.showToast({ title: '请先阅读并同意相关协议', icon: 'none' });
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
     return;
   }
   if (!username.value.trim()) {
-    uni.showToast({ title: '请输入账号', icon: 'none' });
+    uni.showToast({ title: t('login.enterAccount'), icon: 'none' });
     return;
   }
   if (!password.value.trim()) {
-    uni.showToast({ title: '请输入密码', icon: 'none' });
+    uni.showToast({ title: t('login.enterPassword'), icon: 'none' });
     return;
   }
   loading.value = true;
@@ -36,7 +38,7 @@ async function submit() {
     );
     emit('success', result);
   } catch {
-    uni.showToast({ title: '登录失败，请稍后重试', icon: 'none' });
+    uni.showToast({ title: t('login.failed'), icon: 'none' });
   } finally {
     loading.value = false;
   }
@@ -52,7 +54,7 @@ async function submit() {
       <input
         v-model="username"
         class="flex-1 h-full text-sm text-slate-950 bg-transparent"
-        placeholder="输入账号"
+        :placeholder="t('login.inputAccount')"
         placeholder-style="color: #94a3b8"
         type="text"
       />
@@ -64,7 +66,7 @@ async function submit() {
       <input
         v-model="password"
         class="flex-1 h-full text-sm text-slate-950 bg-transparent"
-        placeholder="输入密码"
+        :placeholder="t('login.inputPassword')"
         placeholder-style="color: #94a3b8"
         type="text"
       />
@@ -75,7 +77,9 @@ async function submit() {
       :style="{ opacity: loading ? '0.7' : '1' }"
       @tap="submit"
     >
-      <text class="text-white text-base font-bold">{{ loading ? '登录中…' : '登录' }}</text>
+      <text class="text-white text-base font-bold">
+        {{ loading ? t('login.loggingIn') : t('login.submit') }}
+      </text>
     </view>
   </view>
 </template>

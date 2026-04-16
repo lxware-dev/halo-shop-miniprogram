@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
 import AppContactButton from '@/components/common/AppContactButton.vue';
@@ -26,7 +27,8 @@ import {
 
 const productId = ref<number>(0);
 const appConfig = useAppConfig();
-const { contactServiceEnabled } = appConfig.business;
+const { contactServiceEnabled, currencySymbol } = appConfig.business;
+const { t } = useI18n();
 
 function truncateShareText(text: string, maxLength: number) {
   const normalizedText = text.trim();
@@ -177,7 +179,7 @@ const imageList = computed(() => {
 
 function resolveProductShareTitle() {
   const productTitle = product.value?.title?.trim();
-  const priceText = displayPrice.value !== '0.00' ? `¥${displayPrice.value}` : '';
+  const priceText = displayPrice.value !== '0.00' ? `${currencySymbol}${displayPrice.value}` : '';
   if (productTitle && priceText) {
     return `${truncateShareText(productTitle, 18)} | ${priceText}`;
   }
@@ -226,7 +228,7 @@ const currentImage = ref(0);
 const selectedSpecText = computed(() => {
   const entries = Object.entries(selectedSpecs.value).filter(([, v]) => v);
   if (!entries.length) {
-    return '请选择';
+    return t('product.selectSpec');
   }
   return entries.map(([k, v]) => `${k}: ${v}`).join('，');
 });
@@ -280,7 +282,7 @@ async function handleAddToCart() {
     return;
   }
   if (!selectedVariant.value?.id) {
-    uni.showToast({ title: '请选择规格', icon: 'none' });
+    uni.showToast({ title: t('product.chooseSpec'), icon: 'none' });
     return;
   }
   addingToCart.value = true;
@@ -298,7 +300,7 @@ function handleBuyNow() {
     return;
   }
   if (!selectedVariant.value?.id) {
-    uni.showToast({ title: '请选择规格', icon: 'none' });
+    uni.showToast({ title: t('product.chooseSpec'), icon: 'none' });
     return;
   }
   const targetUrl = `/subpkg-trade/confirm/index?variantId=${selectedVariant.value.id}&quantity=${quantity.value}`;
@@ -324,7 +326,7 @@ function onBannerChange(e: { detail: { current: number } }) {
 
 <template>
   <view v-if="loading" class="flex flex-col items-center justify-center min-h-screen bg-bg-page">
-    <view class="text-slate-400 text-sm">加载中...</view>
+    <view class="text-slate-400 text-sm">{{ $t('common.loading') }}</view>
   </view>
 
   <view v-else-if="product" class="flex flex-col bg-bg-page min-h-screen pb-27.5">
@@ -363,22 +365,26 @@ function onBannerChange(e: { detail: { current: number } }) {
     <view class="bg-white mt-2 px-4 pt-5 pb-2">
       <view class="flex items-baseline gap-2 mb-4">
         <text class="text-brand text-3xl font-bold leading-none tracking-[-1.5rpx]">
-          ¥{{ displayPrice }}
+          {{ currencySymbol }}{{ displayPrice }}
         </text>
         <text
           v-if="originalPrice && originalPrice !== displayPrice"
           class="text-slate-400 text-sm line-through"
         >
-          ¥{{ originalPrice }}
+          {{ currencySymbol }}{{ originalPrice }}
         </text>
       </view>
 
       <view class="flex items-center gap-2 mb-4">
         <view class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">
-          <text class="text-brand text-xs font-bold tracking-[1rpx]">包邮</text>
+          <text class="text-brand text-xs font-bold tracking-[1rpx]">{{
+            $t('product.freeShipping')
+          }}</text>
         </view>
         <view class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">
-          <text class="text-brand text-xs font-bold tracking-[1rpx]">7天无理由退换</text>
+          <text class="text-brand text-xs font-bold tracking-[1rpx]">{{
+            $t('product.returnPolicy')
+          }}</text>
         </view>
       </view>
 
@@ -402,14 +408,14 @@ function onBannerChange(e: { detail: { current: number } }) {
         @tap="showSpecPanel = true"
       >
         <view class="flex items-center gap-2">
-          <text class="text-slate-400 text-sm w-7">选择</text>
+          <text class="text-slate-400 text-sm w-7">{{ $t('product.selectLabel') }}</text>
           <text class="text-slate-950 text-sm font-medium">{{ selectedSpecText }}</text>
         </view>
         <TIcon name="chevron-right" v-bind="{ size: '28rpx', color: ICON_COLOR.muted }" />
       </view>
       <view v-if="product.specDefinition?.length" class="flex items-center justify-between py-4">
         <view class="flex items-center gap-2">
-          <text class="text-slate-400 text-sm w-7">参数</text>
+          <text class="text-slate-400 text-sm w-7">{{ $t('product.specLabel') }}</text>
           <text class="text-slate-950 text-sm font-medium flex-1">
             {{ product.specDefinition.map((d: SpecDefinitionPayload) => d.name).join('，') }}
           </text>
@@ -421,7 +427,9 @@ function onBannerChange(e: { detail: { current: number } }) {
       v-if="product.content"
       class="flex flex-col gap-4 px-4 bg-white mt-2 flex items-center justify-center py-4"
     >
-      <text class="text-slate-400 text-xs font-medium tracking-[2.4rpx]">— 商品详情 —</text>
+      <text class="text-slate-400 text-xs font-medium tracking-[2.4rpx]">
+        {{ $t('product.detailTitle') }}
+      </text>
       <RichContent
         :html="product.content"
         class-name="w-full text-slate-700 text-sm leading-[1.8]"
@@ -450,13 +458,13 @@ function onBannerChange(e: { detail: { current: number } }) {
           :class="addingToCart ? 'opacity-60' : ''"
           @tap="handleAddToCart"
         >
-          <text class="text-brand text-base font-bold">加入购物车</text>
+          <text class="text-brand text-base font-bold">{{ $t('product.addToCart') }}</text>
         </view>
         <view
           class="flex flex-1 items-center justify-center py-3.5 bg-brand rounded-full"
           @tap="handleBuyNow"
         >
-          <text class="text-white text-base font-bold">立即购买</text>
+          <text class="text-white text-base font-bold">{{ $t('product.buyNow') }}</text>
         </view>
       </view>
     </SkuSelector>
@@ -470,7 +478,7 @@ function onBannerChange(e: { detail: { current: number } }) {
   </view>
 
   <view v-else class="flex flex-col items-center justify-center min-h-screen bg-bg-page">
-    <text class="text-slate-400 text-sm">商品不存在或已下架</text>
+    <text class="text-slate-400 text-sm">{{ $t('product.notFound') }}</text>
   </view>
 
   <view
@@ -481,7 +489,7 @@ function onBannerChange(e: { detail: { current: number } }) {
       <view class="flex items-center" :class="contactServiceEnabled ? 'gap-5 pr-2' : ''">
         <AppContactButton v-if="contactServiceEnabled" class="flex flex-col items-center gap-1">
           <TIcon name="service" v-bind="{ size: '42rpx', color: ICON_COLOR.default }" />
-          <text class="text-slate-500 text-xs">客服</text>
+          <text class="text-slate-500 text-xs">{{ $t('product.customerService') }}</text>
         </AppContactButton>
 
         <view class="flex flex-col items-center gap-1 relative" @tap="goToCart">
@@ -494,7 +502,7 @@ function onBannerChange(e: { detail: { current: number } }) {
               {{ totalCount > 99 ? '99+' : totalCount }}
             </text>
           </view>
-          <text class="text-slate-500 text-xs">购物车</text>
+          <text class="text-slate-500 text-xs">{{ $t('product.cart') }}</text>
         </view>
       </view>
 
@@ -503,7 +511,7 @@ function onBannerChange(e: { detail: { current: number } }) {
           class="flex flex-1 items-center justify-center py-3 bg-brand"
           @tap="openExternalProduct(product)"
         >
-          <text class="text-white text-sm font-bold">前往购买</text>
+          <text class="text-white text-sm font-bold">{{ $t('product.goBuy') }}</text>
         </view>
       </view>
       <view v-else class="flex flex-1 rounded-full overflow-hidden">
@@ -511,13 +519,13 @@ function onBannerChange(e: { detail: { current: number } }) {
           class="flex flex-1 items-center justify-center py-3 bg-brand/10"
           @tap="showSpecPanel = true"
         >
-          <text class="text-brand text-sm font-bold">加入购物车</text>
+          <text class="text-brand text-sm font-bold">{{ $t('product.addToCart') }}</text>
         </view>
         <view
           class="flex flex-1 items-center justify-center py-3 bg-brand"
           @tap="showSpecPanel = true"
         >
-          <text class="text-white text-sm font-bold">立即购买</text>
+          <text class="text-white text-sm font-bold">{{ $t('product.buyNow') }}</text>
         </view>
       </view>
     </view>

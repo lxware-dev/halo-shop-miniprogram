@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { useAppConfig } from '@/config';
 import { isLegalDocumentConfigured, openLegalDocument } from '@/helpers/legal';
 import type { LegalDocumentKey } from '@/config/types';
 
 const appConfig = useAppConfig();
-const { name: appName, version: appVersion, brandDescription } = appConfig.app;
+const {
+  name: appName,
+  version: appVersion,
+  brandDescription,
+  companyName,
+  copyrightOwner,
+  copyrightStartYear,
+} = appConfig.app;
+const { t } = useI18n();
 
 interface LegalItem {
   key: LegalDocumentKey;
@@ -18,29 +27,45 @@ interface LegalItem {
 const legalItems = computed<LegalItem[]>(() => [
   {
     key: 'userAgreement',
-    label: '用户协议',
+    label: t('legal.userAgreement'),
     icon: 'file-paste',
     configured: isLegalDocumentConfigured('userAgreement'),
   },
   {
     key: 'privacyPolicy',
-    label: '隐私政策',
+    label: t('legal.privacyPolicy'),
     icon: 'secured',
     configured: isLegalDocumentConfigured('privacyPolicy'),
   },
   {
     key: 'platformRules',
-    label: '平台规则',
+    label: t('legal.platformRules'),
     icon: 'shield',
     configured: isLegalDocumentConfigured('platformRules'),
   },
   {
     key: 'qualification',
-    label: '资质证照',
+    label: t('legal.qualification'),
     icon: 'file',
     configured: isLegalDocumentConfigured('qualification'),
   },
 ]);
+
+const showBrandDescription = computed(() => !!brandDescription?.trim());
+const copyrightText = computed(() => {
+  const owner = copyrightOwner?.trim();
+  if (!owner) {
+    return '';
+  }
+  const currentYear = new Date().getFullYear();
+  const startYear =
+    typeof copyrightStartYear === 'number' && copyrightStartYear > 0
+      ? copyrightStartYear
+      : currentYear;
+  const yearText = startYear < currentYear ? `${startYear}-${currentYear}` : `${currentYear}`;
+  return `Copyright © ${yearText} ${owner}`;
+});
+const displayCompanyName = computed(() => companyName?.trim() ?? '');
 
 function onLegalTap(item: LegalItem) {
   openLegalDocument(item.key);
@@ -59,13 +84,17 @@ function onLegalTap(item: LegalItem) {
       <view class="flex flex-col items-center gap-2">
         <text class="text-slate-950 text-2xl font-bold -tracking-.15">{{ appName }}</text>
         <view class="px-3 py-1 rounded-full bg-slate-100">
-          <text class="text-slate-500 text-sm">版本号 {{ appVersion }}</text>
+          <text class="text-slate-500 text-sm">{{
+            $t('about.version', { version: appVersion })
+          }}</text>
         </view>
       </view>
     </view>
 
-    <view class="mt-2 bg-white px-4 py-4 flex flex-col gap-3">
-      <text class="text-slate-950 text-base font-semibold leading-5">品牌简介</text>
+    <view v-if="showBrandDescription" class="mt-2 bg-white px-4 py-4 flex flex-col gap-3">
+      <text class="text-slate-950 text-base font-semibold leading-5">{{
+        $t('about.brandIntro')
+      }}</text>
       <text class="text-slate-600 text-sm leading-[22.75px]">{{ brandDescription }}</text>
     </view>
 
@@ -89,12 +118,13 @@ function onLegalTap(item: LegalItem) {
         <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: '#cbd5e1' }" />
       </view>
     </view>
-    <view class="flex flex-col items-center gap-2 py-10 mt-4">
-      <text class="text-slate-400 text-xs"
-        >Copyright © 2014-{{ new Date().getFullYear() }} Halo Mall Inc.</text
-      >
-      <text class="text-slate-400 text-xs" style="font-size: 20rpx">
-        杭州飞致云科技有限公司 版权所有
+    <view
+      v-if="copyrightText || displayCompanyName"
+      class="flex flex-col items-center gap-2 py-10 mt-4"
+    >
+      <text v-if="copyrightText" class="text-slate-400 text-xs">{{ copyrightText }}</text>
+      <text v-if="displayCompanyName" class="text-slate-400 text-xs" style="font-size: 20rpx">
+        {{ displayCompanyName }}
       </text>
     </view>
   </view>

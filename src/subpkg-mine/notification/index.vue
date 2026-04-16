@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { onReachBottom } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useI18n } from 'vue-i18n';
 import { notificationApi } from '@/api/modules/notification';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { usePagePullRefresh } from '@/hooks/usePullRefresh';
@@ -17,11 +18,13 @@ interface Tab {
   label: string;
 }
 
-const tabs: Tab[] = [
-  { key: 'all', label: '全部消息' },
-  { key: 'logistics', label: '物流通知' },
-  { key: 'promotion', label: '活动消息' },
-];
+const { t } = useI18n();
+
+const tabs = computed<Tab[]>(() => [
+  { key: 'all', label: t('notification.tab.all') },
+  { key: 'logistics', label: t('notification.tab.logistics') },
+  { key: 'promotion', label: t('notification.tab.promotion') },
+]);
 
 const activeTab = ref<TabKey>('all');
 
@@ -152,13 +155,15 @@ function getIconConfig(category: NotificationCategory): IconConfig {
 
     <view class="flex flex-col flex-1 mt-0.5">
       <view class="flex items-center justify-between px-4 py-2 bg-bg-page">
-        <text class="text-slate-500 text-base line-height-tight tracking-widest">最近消息</text>
+        <text class="text-slate-500 text-base line-height-tight tracking-widest">
+          {{ t('notification.recent') }}
+        </text>
         <text
           class="text-sm"
           :class="unreadCount > 0 ? 'text-brand' : 'text-slate-300'"
           @tap="markAllRead"
         >
-          一键已读
+          {{ t('notification.markAllRead') }}
         </text>
       </view>
 
@@ -202,7 +207,7 @@ function getIconConfig(category: NotificationCategory): IconConfig {
       </view>
 
       <view v-if="loading" class="flex justify-center items-center py-5">
-        <text class="text-slate-400 text-xs">加载中...</text>
+        <text class="text-slate-400 text-xs">{{ t('common.loading') }}</text>
       </view>
 
       <view
@@ -210,7 +215,7 @@ function getIconConfig(category: NotificationCategory): IconConfig {
         class="flex flex-col items-center justify-center py-12 opacity-40"
       >
         <TIcon name="image" v-bind="{ size: '54rpx', color: '#0f172a' }" />
-        <text class="text-slate-950 text-sm leading-none mt-2">没有更多消息了</text>
+        <text class="text-slate-950 text-sm leading-none mt-2">{{ t('notification.noMore') }}</text>
       </view>
 
       <view
@@ -218,7 +223,7 @@ function getIconConfig(category: NotificationCategory): IconConfig {
         class="flex flex-col items-center justify-center py-15"
       >
         <TIcon name="notification" v-bind="{ size: '96rpx', color: '#cbd5e1' }" />
-        <text class="text-slate-400 text-sm mt-3">暂无消息</text>
+        <text class="text-slate-400 text-sm mt-3">{{ t('notification.empty') }}</text>
       </view>
     </view>
   </view>

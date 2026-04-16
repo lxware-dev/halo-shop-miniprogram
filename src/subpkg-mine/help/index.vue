@@ -90,7 +90,7 @@ function getHighlightSegments(text: string): HighlightSegment[] {
 <template>
   <view class="flex flex-col min-h-screen bg-bg-page">
     <view class="bg-white px-4 pt-6 pb-6 flex flex-col gap-4">
-      <text class="text-slate-950 text-2xl font-bold leading-8">您好，请问有什么可以帮您？</text>
+      <text class="text-slate-950 text-2xl font-bold leading-8">{{ $t('help.title') }}</text>
       <view class="flex items-center h-12 bg-slate-100 rounded-2 overflow-hidden">
         <view class="flex items-center justify-center pl-4 pr-2 h-full bg-slate-100 shrink-0">
           <TIcon name="search" v-bind="{ size: '36rpx', color: '#94a3b8' }" />
@@ -99,7 +99,7 @@ function getHighlightSegments(text: string): HighlightSegment[] {
           v-model="keyword"
           class="flex-1 h-full text-sm text-slate-950 bg-slate-100 px-2"
           confirm-type="search"
-          placeholder="搜索常见问题"
+          :placeholder="$t('help.searchPlaceholder')"
           placeholder-style="color: #94a3b8"
         />
       </view>
@@ -114,8 +114,10 @@ function getHighlightSegments(text: string): HighlightSegment[] {
             <TIcon name="service" v-bind="{ size: '38rpx', color: '#ee2b2b' }" />
           </view>
           <view class="flex flex-col items-start min-w-0">
-            <text class="text-slate-950 text-sm font-medium leading-5">联系客服</text>
-            <text class="text-slate-500 text-xs leading-4">在线咨询订单、物流与售后问题</text>
+            <text class="text-slate-950 text-sm font-medium leading-5">{{
+              $t('help.contact')
+            }}</text>
+            <text class="text-slate-500 text-xs leading-4">{{ $t('help.contactDesc') }}</text>
           </view>
         </view>
         <TIcon name="chevron-right" v-bind="{ size: '28rpx', color: '#94a3b8' }" />
@@ -124,7 +126,9 @@ function getHighlightSegments(text: string): HighlightSegment[] {
 
     <view class="mt-2 bg-white px-4 py-2 flex-1">
       <view class="py-4">
-        <text class="text-slate-950 text-lg font-bold -tracking-[0.45px]">猜你想问</text>
+        <text class="text-slate-950 text-lg font-bold -tracking-[0.45px]">{{
+          $t('help.guessQuestion')
+        }}</text>
       </view>
 
       <view
@@ -164,8 +168,8 @@ function getHighlightSegments(text: string): HighlightSegment[] {
         v-if="keyword.trim() && !filteredFaqList.length"
         class="flex flex-col items-center justify-center py-10 text-center"
       >
-        <text class="text-slate-900 text-sm font-medium leading-5">未找到相关问题</text>
-        <text class="mt-2 text-slate-500 text-xs leading-4">试试更换关键词，或直接联系客服</text>
+        <text class="text-slate-900 text-sm font-medium leading-5">{{ $t('help.notFound') }}</text>
+        <text class="mt-2 text-slate-500 text-xs leading-4">{{ $t('help.notFoundDesc') }}</text>
       </view>
     </view>
   </view>

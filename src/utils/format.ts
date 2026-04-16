@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { useAppConfig } from '@/config';
 
 const PHONE_MASK_REGEXP = /(\d{3})\d{4}(\d{4})/;
 
@@ -11,6 +12,41 @@ export function formatPrice(price: number | null | undefined): string {
     return '0.00';
   }
   return price.toFixed(2);
+}
+
+/**
+ * Format price using locale-aware grouping and precision
+ */
+export function formatPriceByLocale(price: number | null | undefined, locale = 'zh-CN'): string {
+  return Number(price ?? 0).toLocaleString(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * Read the configured currency symbol
+ */
+export function getCurrencySymbol(): string {
+  return useAppConfig().business.currencySymbol ?? '';
+}
+
+/**
+ * Format currency using the configured symbol
+ */
+export function formatCurrency(
+  price: number | null | undefined,
+  options?: {
+    locale?: string;
+    withSpace?: boolean;
+  },
+): string {
+  const amount = options?.locale ? formatPriceByLocale(price, options.locale) : formatPrice(price);
+  const symbol = getCurrencySymbol();
+  if (!symbol) {
+    return amount;
+  }
+  return options?.withSpace ? `${symbol} ${amount}` : `${symbol}${amount}`;
 }
 
 /**

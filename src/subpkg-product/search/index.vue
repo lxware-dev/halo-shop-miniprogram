@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useAppConfig } from '@/config';
 import { productApi } from '@/api/modules/product';
 import { useQuery } from '@/hooks/useRequest';
 import { useSmoothLoading } from '@/hooks/useSmoothLoading';
@@ -11,6 +12,7 @@ import type { ProductResponse } from '@halo-dev/api-client';
 
 const keyword = ref('');
 const inputFocused = ref(false);
+const { currencySymbol } = useAppConfig().business;
 
 onLoad((options) => {
   if (options?.keyword) {
@@ -109,7 +111,7 @@ function goToProduct(product: ProductResponse) {
           <TIcon name="search" v-bind="{ size: '30rpx', color: '#94a3b8' }" />
           <input
             class="flex-1 text-sm text-slate-950 bg-transparent"
-            placeholder="搜索商品名称"
+            :placeholder="$t('search.placeholder')"
             placeholder-class="text-slate-400"
             :value="keyword"
             :focus="inputFocused"
@@ -125,7 +127,7 @@ function goToProduct(product: ProductResponse) {
           class="shrink-0 flex items-center justify-center rounded-1.5 px-3 py-2 bg-brand"
           @tap="doNavigate"
         >
-          <text class="text-white text-sm font-medium">搜索</text>
+          <text class="text-white text-sm font-medium">{{ $t('search.action') }}</text>
         </view>
       </view>
     </view>
@@ -133,7 +135,9 @@ function goToProduct(product: ProductResponse) {
     <view class="flex flex-col">
       <view v-if="history.length" class="px-4 pt-4 pb-3">
         <view class="flex items-center justify-between mb-3">
-          <text class="text-slate-950 text-sm font-medium tracking-[-0.7rpx]">最近搜索</text>
+          <text class="text-slate-950 text-sm font-medium tracking-[-0.7rpx]">
+            {{ $t('search.history') }}
+          </text>
           <view @tap="clearHistory">
             <TIcon name="delete" v-bind="{ size: '36rpx', color: '#94a3b8' }" />
           </view>
@@ -152,7 +156,7 @@ function goToProduct(product: ProductResponse) {
 
       <view class="flex items-center justify-center gap-3 pt-4 pb-4 px-4">
         <view class="bg-slate-300 h-[1rpx] w-6" />
-        <text class="text-slate-400 text-xs tracking-0.5">猜你喜欢</text>
+        <text class="text-slate-400 text-xs tracking-0.5">{{ $t('search.guessYouLike') }}</text>
         <view class="bg-slate-300 h-[1rpx] w-6" />
       </view>
 
@@ -168,17 +172,17 @@ function goToProduct(product: ProductResponse) {
         </view>
 
         <view v-else-if="recommendError" class="flex flex-col items-center py-8 gap-2">
-          <text class="text-slate-400 text-xs">加载失败</text>
+          <text class="text-slate-400 text-xs">{{ $t('search.loadFailed') }}</text>
           <view
             class="flex items-center justify-center px-4 py-1.5 rounded-full border border-solid border-slate-300"
             @tap="loadRecommend"
           >
-            <text class="text-slate-500 text-xs">重试</text>
+            <text class="text-slate-500 text-xs">{{ $t('common.retry') }}</text>
           </view>
         </view>
 
         <view v-else-if="!recommend.length" class="flex flex-col items-center py-8">
-          <text class="text-slate-400 text-xs">暂无推荐</text>
+          <text class="text-slate-400 text-xs">{{ $t('search.emptyRecommend') }}</text>
         </view>
 
         <view v-else class="grid grid-cols-2 gap-3">
@@ -201,7 +205,7 @@ function goToProduct(product: ProductResponse) {
                 {{ product.title }}
               </text>
               <view class="flex items-baseline gap-0.5">
-                <text class="text-brand text-2 font-bold">¥</text>
+                <text class="text-brand text-2 font-bold">{{ currencySymbol }}</text>
                 <text class="text-brand text-4 font-bold leading-none">
                   {{ formatPrice(product.minPrice) }}
                 </text>
@@ -209,7 +213,7 @@ function goToProduct(product: ProductResponse) {
                   v-if="product.minOriginalPrice"
                   class="text-slate-400 text-xs line-through ml-0.5"
                 >
-                  ¥{{ formatPrice(product.minOriginalPrice) }}
+                  {{ currencySymbol }}{{ formatPrice(product.minOriginalPrice) }}
                 </text>
               </view>
             </view>

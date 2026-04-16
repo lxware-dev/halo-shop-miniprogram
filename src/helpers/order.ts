@@ -1,4 +1,5 @@
 import type { OrderResponse, OrderItemResponse } from '@halo-dev/api-client';
+import { translate } from '@/locales';
 
 /**
  * Whether the order requires logistics delivery
@@ -30,99 +31,107 @@ export interface OrderStatusInfo {
   subtitle?: string;
 }
 
+interface OrderStatusPreset {
+  label: string;
+  textClass: string;
+  bgClass: string;
+  heroBgClass: string;
+  subtitle?: string;
+}
+
 const ORDER_STATUS_INFO_PRESETS = {
   CANCELLED: {
-    label: '已取消',
+    label: 'order.status.cancelled',
     textClass: 'text-slate-500',
     bgClass: 'bg-slate-100',
     heroBgClass: 'bg-slate-400',
-    subtitle: '订单已取消',
+    subtitle: 'order.status.cancelledSubtitle',
   },
   REFUNDED: {
-    label: '已退款',
+    label: 'order.status.refunded',
     textClass: 'text-slate-500',
     bgClass: 'bg-slate-100',
     heroBgClass: 'bg-slate-400',
-    subtitle: '订单已退款',
+    subtitle: 'order.status.refundedSubtitle',
   },
   PARTIAL_REFUNDED: {
-    label: '部分退款',
+    label: 'order.status.partialRefunded',
     textClass: 'text-amber-700',
     bgClass: 'bg-amber-100',
     heroBgClass: 'bg-amber-500',
-    subtitle: '订单存在部分退款，请留意售后状态',
+    subtitle: 'order.status.partialRefundedSubtitle',
   },
   COMPLETED: {
-    label: '已完成',
+    label: 'order.status.completed',
     textClass: 'text-emerald-700',
     bgClass: 'bg-emerald-100',
     heroBgClass: 'bg-emerald-500',
-    subtitle: '交易已完成，感谢您的购买',
+    subtitle: 'order.status.completedSubtitle',
   },
   PENDING_PAYMENT: {
-    label: '待付款',
+    label: 'order.status.pendingPayment',
     textClass: 'text-brand',
     bgClass: 'bg-red-100',
     heroBgClass: 'bg-brand',
-    subtitle: '请尽快完成支付，超时将自动取消',
+    subtitle: 'order.status.pendingPaymentSubtitle',
   },
   AUTHORIZING_PAYMENT: {
-    label: '支付处理中',
+    label: 'order.status.authorizingPayment',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
     heroBgClass: 'bg-blue-500',
-    subtitle: '正在确认支付结果，请稍候',
+    subtitle: 'order.status.authorizingPaymentSubtitle',
   },
   PAID: {
-    label: '已支付',
+    label: 'order.status.paid',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
     heroBgClass: 'bg-blue-500',
-    subtitle: '订单已支付',
+    subtitle: 'order.status.paidSubtitle',
   },
   PAID_NO_SHIPPING: {
-    label: '已支付',
+    label: 'order.status.paid',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
     heroBgClass: 'bg-blue-500',
-    subtitle: '订单已支付，无需物流配送',
+    subtitle: 'order.status.paidNoShippingSubtitle',
   },
   PENDING_FULFILLMENT: {
-    label: '待发货',
+    label: 'order.status.pendingFulfillment',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
     heroBgClass: 'bg-slate-500',
-    subtitle: '商家正在处理您的订单',
+    subtitle: 'order.status.pendingFulfillmentSubtitle',
   },
   WAITING_RECEIPT: {
-    label: '待收货',
+    label: 'order.status.waitingReceipt',
     textClass: 'text-orange-700',
     bgClass: 'bg-orange-100',
     heroBgClass: 'bg-slate-500',
-    subtitle: '商家已发货，请留意物流动态',
+    subtitle: 'order.status.waitingReceiptSubtitle',
   },
   PAYMENT_FAILED: {
-    label: '支付失败',
+    label: 'order.status.paymentFailed',
     textClass: 'text-red-700',
     bgClass: 'bg-red-100',
     heroBgClass: 'bg-red-500',
-    subtitle: '支付未成功，请重新下单或稍后再试',
+    subtitle: 'order.status.paymentFailedSubtitle',
   },
   EXPIRED: {
-    label: '已关闭',
+    label: 'order.status.expired',
     textClass: 'text-slate-500',
     bgClass: 'bg-slate-100',
     heroBgClass: 'bg-slate-400',
-    subtitle: '订单支付已过期',
+    subtitle: 'order.status.expiredSubtitle',
   },
   PROCESSING: {
-    label: '处理中',
+    label: 'order.status.processing',
     textClass: 'text-slate-500',
     bgClass: 'bg-slate-100',
     heroBgClass: 'bg-slate-500',
     subtitle: '',
   },
-} satisfies Record<string, OrderStatusInfo>;
+} satisfies Record<string, OrderStatusPreset>;
 
 type OrderStatusPresetKey = keyof typeof ORDER_STATUS_INFO_PRESETS;
 
@@ -146,7 +155,7 @@ const PAID_FULFILLMENT_STATUS_TO_PRESET: Partial<
 function resolvePaidOrderStatusInfo(
   order: OrderResponse,
   orderRequiresShipping: boolean,
-): OrderStatusInfo {
+): OrderStatusPreset {
   if (!orderRequiresShipping) {
     return ORDER_STATUS_INFO_PRESETS.PAID_NO_SHIPPING;
   }
@@ -166,31 +175,33 @@ function resolvePaidOrderStatusInfo(
  */
 export function getOrderStatusInfo(order: OrderResponse): OrderStatusInfo {
   const orderRequiresShipping = requiresShipping(order);
+  let preset: OrderStatusPreset;
 
   if (order.status === 'CANCELLED' || order.paymentStatus === 'CANCELLED') {
-    return ORDER_STATUS_INFO_PRESETS.CANCELLED;
-  }
-  if (order.refundStatus === 'FULL' || order.paymentStatus === 'REFUNDED') {
-    return ORDER_STATUS_INFO_PRESETS.REFUNDED;
-  }
-  if (order.refundStatus === 'PARTIAL') {
-    return ORDER_STATUS_INFO_PRESETS.PARTIAL_REFUNDED;
-  }
-  if (order.status === 'ARCHIVED') {
-    return ORDER_STATUS_INFO_PRESETS.COMPLETED;
+    preset = ORDER_STATUS_INFO_PRESETS.CANCELLED;
+  } else if (order.refundStatus === 'FULL' || order.paymentStatus === 'REFUNDED') {
+    preset = ORDER_STATUS_INFO_PRESETS.REFUNDED;
+  } else if (order.refundStatus === 'PARTIAL') {
+    preset = ORDER_STATUS_INFO_PRESETS.PARTIAL_REFUNDED;
+  } else if (order.status === 'ARCHIVED') {
+    preset = ORDER_STATUS_INFO_PRESETS.COMPLETED;
+  } else if (order.paymentStatus === 'PAID') {
+    preset = resolvePaidOrderStatusInfo(order, orderRequiresShipping);
+  } else {
+    const paymentPresetKey = order.paymentStatus
+      ? PAYMENT_STATUS_TO_PRESET[order.paymentStatus]
+      : undefined;
+
+    preset = paymentPresetKey
+      ? ORDER_STATUS_INFO_PRESETS[paymentPresetKey]
+      : ORDER_STATUS_INFO_PRESETS.PROCESSING;
   }
 
-  if (order.paymentStatus === 'PAID') {
-    return resolvePaidOrderStatusInfo(order, orderRequiresShipping);
-  }
-
-  const paymentPresetKey = order.paymentStatus
-    ? PAYMENT_STATUS_TO_PRESET[order.paymentStatus]
-    : undefined;
-
-  return paymentPresetKey
-    ? ORDER_STATUS_INFO_PRESETS[paymentPresetKey]
-    : ORDER_STATUS_INFO_PRESETS.PROCESSING;
+  return {
+    ...preset,
+    label: translate(preset.label),
+    subtitle: preset.subtitle ? translate(preset.subtitle) : '',
+  };
 }
 
 /**

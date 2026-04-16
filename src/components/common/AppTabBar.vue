@@ -5,13 +5,15 @@ import TTabBar from '@tdesign/uniapp/tab-bar/tab-bar.vue';
 import TTabBarItem from '@tdesign/uniapp/tab-bar-item/tab-bar-item.vue';
 import { useTabBar } from '@/composables/useTabBar';
 import { useCart } from '@/hooks/useCart';
+import { useI18n } from 'vue-i18n';
 
-const tabs = [
-  { value: 'home', label: '首页', icon: 'home', path: '/pages/home/index' },
-  { value: 'category', label: '分类', icon: 'view-list', path: '/pages/category/index' },
-  { value: 'cart', label: '购物车', icon: 'cart', path: '/pages/cart/index' },
-  { value: 'user', label: '我的', icon: 'user', path: '/pages/user/index' },
-];
+const { t } = useI18n();
+const tabs = computed(() => [
+  { value: 'home', label: t('tab.home'), icon: 'home', path: '/pages/home/index' },
+  { value: 'category', label: t('tab.category'), icon: 'view-list', path: '/pages/category/index' },
+  { value: 'cart', label: t('tab.cart'), icon: 'cart', path: '/pages/cart/index' },
+  { value: 'user', label: t('tab.user'), icon: 'user', path: '/pages/user/index' },
+]);
 const activeValue = ref<string>('home');
 const { barBottom } = useTabBar();
 const { totalCount } = useCart();
@@ -19,14 +21,14 @@ const tabBarStyle = computed(() => ({
   bottom: `${barBottom}px`,
 }));
 const tabsWithBadge = computed(() =>
-  tabs.map((tab) => ({
+  tabs.value.map((tab) => ({
     ...tab,
     badgeProps: tab.value === 'cart' && totalCount.value > 0 ? { count: totalCount.value } : {},
   })),
 );
 
 function getValueByPath(path: string) {
-  const tab = tabs.find((t) => t.path === path);
+  const tab = tabs.value.find((t) => t.path === path);
   return tab?.value ?? 'home';
 }
 
@@ -41,7 +43,7 @@ onShow(() => {
 
 function handleChange(e: { value: string }) {
   const { value } = e;
-  const tab = tabs.find((t) => t.value === value);
+  const tab = tabs.value.find((t) => t.value === value);
   if (tab && tab.value !== activeValue.value) {
     activeValue.value = tab.value;
     uni.switchTab({ url: tab.path });

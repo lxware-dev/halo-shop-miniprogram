@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { openLegalDocument } from '@/helpers/legal';
 import { sendRequest, useQuery } from '@/hooks/useRequest';
+import { formatCurrency, formatPriceByLocale, getCurrencySymbol } from '@/utils/format';
 import type {
   OrderResponse,
   PaymentMethodPublicResponse,
@@ -14,11 +16,13 @@ import type {
 } from '@halo-dev/api-client';
 
 const orderCode = ref<string>('');
+const { t, locale } = useI18n();
 const { data: orderData, run: runOrder } = useQuery<OrderResponse, { orderCode: string }>(
   (params: { orderCode: string }) => orderApi.getOrder(params.orderCode),
   { immediate: false },
 );
 const payableAmount = computed(() => orderData.value?.totalAmount ?? 0);
+const currencySymbol = getCurrencySymbol();
 
 onLoad(async (options) => {
   if (!guardCurrentPageAccess()) {
@@ -55,7 +59,9 @@ async function loadPaymentMethods() {
     paymentMethods.value = (methods ?? []).filter((m) => m.provider === 'WECHAT_PAY' && m.enabled);
     selectedMethodId.value = paymentMethods.value[0]?.id ?? null;
   } catch {
-    paymentMethods.value = [{ id: 1, name: '微信支付', provider: 'WECHAT_PAY', enabled: true }];
+    paymentMethods.value = [
+      { id: 1, name: t('payment.wechatPay'), provider: 'WECHAT_PAY', enabled: true },
+    ];
     selectedMethodId.value = 1;
   }
 }
@@ -70,15 +76,6 @@ interface MethodMeta {
   recommended?: boolean;
 }
 
-const METHOD_META: Record<string, MethodMeta> = {
-  WECHAT_PAY: {
-    bg: '#22c55e',
-    icon: 'logo-wechatpay',
-    desc: '使用微信钱包极速支付',
-    recommended: true,
-  },
-};
-
 const PROVIDER_ALIASES: Record<string, string> = {
   WECHAT: 'WECHAT_PAY',
   WECHATPAY: 'WECHAT_PAY',
@@ -86,18 +83,25 @@ const PROVIDER_ALIASES: Record<string, string> = {
 
 function getMeta(provider: string | undefined): MethodMeta {
   const normalizedProvider = PROVIDER_ALIASES[provider ?? ''] ?? provider ?? '';
-  return METHOD_META[normalizedProvider] ?? { bg: '#64748b', icon: 'wallet', desc: '在线支付' };
+  if (normalizedProvider === 'WECHAT_PAY') {
+    return {
+      bg: '#22c55e',
+      icon: 'logo-wechatpay',
+      desc: t('payment.wechatPayDesc'),
+      recommended: true,
+    };
+  }
+  return {
+    bg: '#64748b',
+    icon: 'wallet',
+    desc: t('payment.onlinePay'),
+  };
 }
 
 /**
  * Format amount
  */
-const formattedAmount = computed(() =>
-  payableAmount.value.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }),
-);
+const formattedAmount = computed(() => formatPriceByLocale(payableAmount.value, locale.value));
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let pollCount = 0;
@@ -163,7 +167,7 @@ function extractWechatJsapiParams(
 
 async function handlePay() {
   if (!selectedMethodId.value) {
-    uni.showToast({ title: '请选择支付方式', icon: 'none' });
+    uni.showToast({ title: t('payment.selectMethodToast'), icon: 'none' });
     return;
   }
   if (paying.value) {
@@ -192,7 +196,7 @@ async function handlePay() {
     ) {
       paying.value = false;
       uni.showToast({
-        title: paymentErrorMessage || '支付参数不完整，请稍后重试',
+        title: paymentErrorMessage || t('payment.invalidParams'),
         icon: 'none',
       });
       return;
@@ -229,7 +233,7 @@ async function handlePay() {
     startPolling(sessionCode);
   } catch {
     paying.value = false;
-    uni.showToast({ title: '发起支付失败，请重试', icon: 'none' });
+    uni.showToast({ title: t('payment.initiateFailed'), icon: 'none' });
   }
 }
 </script>
@@ -237,25 +241,27 @@ async function handlePay() {
 <template>
   <view class="flex flex-col min-h-screen bg-white">
     <view class="bg-white flex flex-col items-center px-4 py-10">
-      <text class="text-slate-500 text-sm mb-2">待支付金额</text>
+      <text class="text-slate-500 text-sm mb-2">{{ $t('payment.pendingAmount') }}</text>
 
       <view class="flex items-end gap-1 mb-4">
-        <text class="text-brand text-2xl font-bold leading-none">¥</text>
+        <text class="text-brand text-2xl font-bold leading-none">{{ currencySymbol }}</text>
         <text class="text-brand text-4xl font-bold leading-none tracking-tighter">
           {{ formattedAmount }}
         </text>
       </view>
 
       <view v-if="orderCode" class="flex items-center bg-slate-50 rounded-1 px-3 py-1">
-        <text class="text-slate-500 text-xs">订单编号: {{ orderCode }}</text>
+        <text class="text-slate-500 text-xs">{{
+          $t('payment.orderCode', { code: orderCode })
+        }}</text>
       </view>
     </view>
 
     <view class="flex flex-col gap-4 px-4 pb-27.5">
-      <text class="text-slate-950 text-sm font-medium">选择支付方式</text>
+      <text class="text-slate-950 text-sm font-medium">{{ $t('payment.selectMethod') }}</text>
 
       <view v-if="paymentMethods.length === 0" class="flex items-center justify-center py-8">
-        <text class="text-slate-400 text-sm">暂无可用支付方式</text>
+        <text class="text-slate-400 text-sm">{{ $t('payment.noMethods') }}</text>
       </view>
 
       <view v-else class="flex flex-col gap-3">
@@ -283,7 +289,7 @@ async function handlePay() {
                 v-if="getMeta(method.provider).recommended"
                 class="flex items-center bg-brand/10 rounded-0.5 px-1.5 py-0.5"
               >
-                <text class="text-brand text-xs">推荐</text>
+                <text class="text-brand text-xs">{{ $t('payment.recommended') }}</text>
               </view>
             </view>
             <text class="text-slate-500 text-xs">{{ getMeta(method.provider).desc }}</text>
@@ -308,15 +314,15 @@ async function handlePay() {
       >
         <TIcon name="info-circle" v-bind="{ size: '30rpx', color: 'rgba(238,43,43,0.8)' }" />
         <view class="flex-1 flex flex-wrap items-center text-xs leading-relaxed">
-          <text style="color: rgba(238, 43, 43, 0.8)">支付即代表您已阅读并同意</text>
+          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementPrefix') }}</text>
           <text class="text-brand font-medium" @tap.stop="openLegalDocument('paymentAgreement')">
-            《用户支付协议》
+            {{ $t('legal.paymentAgreement') }}
           </text>
-          <text style="color: rgba(238, 43, 43, 0.8)">及</text>
+          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementAnd') }}</text>
           <text class="text-brand font-medium" @tap.stop="openLegalDocument('privacyPolicy')">
-            《隐私政策》
+            {{ $t('legal.privacyPolicy') }}
           </text>
-          <text style="color: rgba(238, 43, 43, 0.8)">。如有疑问，请咨询在线客服。</text>
+          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementSuffix') }}</text>
         </view>
       </view>
     </view>
@@ -330,7 +336,13 @@ async function handlePay() {
         @tap="handlePay"
       >
         <text class="text-white text-base font-bold">
-          {{ paying ? '支付处理中...' : `立即支付 ¥${formattedAmount}` }}
+          {{
+            paying
+              ? $t('payment.processing')
+              : $t('payment.payNow', {
+                  amount: formatCurrency(payableAmount, { locale }),
+                })
+          }}
         </text>
       </view>
     </view>

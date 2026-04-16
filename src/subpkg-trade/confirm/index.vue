@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useAppConfig } from '@/config';
 import { checkoutApi } from '@/api/modules/checkout';
 import { guardCurrentPageAccess, navigateToPage } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { addressApi } from '@/api/modules/address';
 import { sendRequest, useQuery } from '@/hooks/useRequest';
-import { formatPrice, maskPhone, joinName, joinAddress } from '@/utils/format';
+import { formatPrice, formatCurrency, maskPhone, joinName, joinAddress } from '@/utils/format';
 import { getSpecText } from '@/helpers/order';
 import type {
   CheckoutContextResponse,
@@ -29,6 +31,8 @@ interface CheckoutPrepareItemPayload {
 
 const loading = ref(true);
 const submitting = ref(false);
+const { t } = useI18n();
+const { currencySymbol } = useAppConfig().business;
 const context = ref<CheckoutContextResponse | null>(null);
 const selectedAddress = ref<UserAddressResponse | null>(null);
 const localAddresses = ref<UserAddressResponse[]>([]);
@@ -105,7 +109,7 @@ onLoad(async (options) => {
   }
 
   if (!createPayload || !createPayload.items?.length) {
-    uni.showToast({ title: '结算参数无效', icon: 'none' });
+    uni.showToast({ title: t('checkout.invalidParams'), icon: 'none' });
     loading.value = false;
     hasInitialized.value = true;
     return;
@@ -117,7 +121,7 @@ onLoad(async (options) => {
     await loadAddresses();
     await refreshCheckoutContext(selectedAddress.value?.id);
   } catch {
-    uni.showToast({ title: '结算初始化失败', icon: 'none' });
+    uni.showToast({ title: t('checkout.initFailed'), icon: 'none' });
   } finally {
     loading.value = false;
     hasInitialized.value = true;
@@ -266,7 +270,7 @@ function goSelectAddress() {
   if (currentPage) {
     currentPage.onAddressSelected = (address: UserAddressResponse) => {
       applySelectedAddress(address).catch(() => {
-        uni.showToast({ title: '更新地址失败', icon: 'none' });
+        uni.showToast({ title: t('checkout.updateAddressFailed'), icon: 'none' });
       });
     };
   }
@@ -325,11 +329,11 @@ async function handleSubmit() {
     return;
   }
   if (syncingContext.value) {
-    uni.showToast({ title: '正在更新结算信息，请稍后', icon: 'none' });
+    uni.showToast({ title: t('checkout.syncing'), icon: 'none' });
     return;
   }
   if (isShippingRequired.value && !hasAddress.value) {
-    uni.showToast({ title: '请选择收货地址', icon: 'none' });
+    uni.showToast({ title: t('checkout.selectAddress'), icon: 'none' });
     return;
   }
   if (!context.value) {
@@ -338,7 +342,7 @@ async function handleSubmit() {
   const submitSource = context.value.source === 'BUY_NOW' ? 'BUY_NOW' : 'CART';
   const submitItems = buildSubmitItems(submitSource);
   if (!submitItems.length) {
-    uni.showToast({ title: '结算商品为空', icon: 'none' });
+    uni.showToast({ title: t('checkout.emptyItems'), icon: 'none' });
     return;
   }
 
@@ -360,14 +364,14 @@ async function handleSubmit() {
     const { order } = await sendRequest(checkoutApi.submitOrder(payload));
 
     if (!order?.orderCode) {
-      uni.showToast({ title: '提交成功，但未获取订单号', icon: 'none' });
+      uni.showToast({ title: t('checkout.submitMissingOrderCode'), icon: 'none' });
       return;
     }
     uni.redirectTo({
       url: `/subpkg-trade/payment/index?orderCode=${order.orderCode}`,
     });
   } catch {
-    uni.showToast({ title: '提交失败，请重试', icon: 'none' });
+    uni.showToast({ title: t('checkout.submitFailed'), icon: 'none' });
   } finally {
     submitting.value = false;
   }
@@ -376,7 +380,7 @@ async function handleSubmit() {
 
 <template>
   <view v-if="loading" class="flex flex-col items-center justify-center min-h-screen bg-bg-page">
-    <text class="text-slate-400 text-sm">加载中...</text>
+    <text class="text-slate-400 text-sm">{{ $t('common.loading') }}</text>
   </view>
 
   <view
@@ -417,12 +421,16 @@ async function handleSubmit() {
             </view>
 
             <view v-else-if="isShippingRequired" class="flex flex-col gap-1">
-              <text class="text-slate-950 text-base font-medium">请添加收货地址</text>
-              <text class="text-slate-400 text-sm">点击选择或添加收货地址</text>
+              <text class="text-slate-950 text-base font-medium">{{
+                $t('checkout.addAddress')
+              }}</text>
+              <text class="text-slate-400 text-sm">{{ $t('checkout.addAddressDesc') }}</text>
             </view>
 
             <view v-else class="flex flex-col gap-1">
-              <text class="text-slate-950 text-sm font-medium">无需收货地址</text>
+              <text class="text-slate-950 text-sm font-medium">{{
+                $t('checkout.noAddressNeeded')
+              }}</text>
             </view>
           </view>
 
@@ -462,7 +470,9 @@ async function handleSubmit() {
             </view>
 
             <view class="flex items-end justify-between">
-              <text class="text-brand text-base font-bold"> ¥ {{ formatPrice(item.price) }} </text>
+              <text class="text-brand text-base font-bold">
+                {{ formatCurrency(item.price, { withSpace: true }) }}
+              </text>
               <text class="text-slate-400 text-sm">x {{ item.quantity }}</text>
             </view>
           </view>
@@ -471,21 +481,23 @@ async function handleSubmit() {
 
       <view class="bg-white mt-2 px-4">
         <view class="flex items-center justify-between py-4">
-          <text class="text-slate-950 text-sm">商品金额</text>
-          <text class="text-slate-950 text-sm">¥ {{ formatPrice(saleTotalAmount) }}</text>
+          <text class="text-slate-950 text-sm">{{ $t('checkout.productAmount') }}</text>
+          <text class="text-slate-950 text-sm">
+            {{ formatCurrency(saleTotalAmount, { withSpace: true }) }}
+          </text>
         </view>
 
         <view
           class="flex items-center justify-between py-4 border-0 border-t border-solid border-slate-50"
         >
-          <text class="text-slate-950 text-sm">配送费</text>
+          <text class="text-slate-950 text-sm">{{ $t('checkout.shippingFee') }}</text>
           <text class="text-slate-950 text-sm">
             {{
               !isShippingRequired
-                ? '无需配送'
+                ? $t('checkout.noShipping')
                 : shippingFee > 0
-                  ? `¥ ${formatPrice(shippingFee)}`
-                  : '免运费'
+                  ? formatCurrency(shippingFee, { withSpace: true })
+                  : $t('checkout.freeShipping')
             }}
           </text>
         </view>
@@ -494,20 +506,22 @@ async function handleSubmit() {
           v-if="shippingDetails.length"
           class="flex items-center justify-between py-4 border-0 border-t border-solid border-slate-50"
         >
-          <text class="text-slate-950 text-sm">配送方式</text>
+          <text class="text-slate-950 text-sm">{{ $t('checkout.shippingMethod') }}</text>
           <text class="text-slate-500 text-sm text-right max-w-60 line-clamp-2">
             {{
-              shippingDetails[0].shippingRateName || shippingDetails[0].description || '标准配送'
+              shippingDetails[0].shippingRateName ||
+              shippingDetails[0].description ||
+              $t('checkout.standardShipping')
             }}
           </text>
         </view>
 
         <view class="flex items-center gap-3 py-4 border-0 border-t border-solid border-slate-50">
-          <text class="text-slate-950 text-sm shrink-0">订单备注</text>
+          <text class="text-slate-950 text-sm shrink-0">{{ $t('checkout.remark') }}</text>
           <input
             v-model="remark"
             class="flex-1 text-sm text-slate-950"
-            placeholder="选填，请先和商家协商一致"
+            :placeholder="$t('checkout.remarkPlaceholder')"
             placeholder-style="color: #cbd5e1"
             :maxlength="200"
           />
@@ -515,10 +529,14 @@ async function handleSubmit() {
       </view>
 
       <view class="bg-white mt-2 px-4 py-4 flex items-center justify-end gap-2">
-        <text class="text-slate-500 text-xs">共 {{ totalQuantity }} 件商品</text>
+        <text class="text-slate-500 text-xs">{{
+          $t('checkout.totalItems', { count: totalQuantity })
+        }}</text>
         <view class="flex items-center">
-          <text class="text-slate-950 text-sm">合计：</text>
-          <text class="text-brand text-xl font-bold"> ¥ {{ formatPrice(payableAmount) }} </text>
+          <text class="text-slate-950 text-sm">{{ $t('checkout.totalAmount') }}</text>
+          <text class="text-brand text-xl font-bold">
+            {{ formatCurrency(payableAmount, { withSpace: true }) }}
+          </text>
         </view>
       </view>
     </scroll-view>
@@ -528,13 +546,13 @@ async function handleSubmit() {
     >
       <view class="flex flex-col gap-0.5">
         <view class="flex items-baseline gap-0.5">
-          <text class="text-brand text-sm font-bold">¥</text>
+          <text class="text-brand text-sm font-bold">{{ currencySymbol }}</text>
           <text class="text-brand text-6 font-bold">
             {{ formatPrice(payableAmount) }}
           </text>
         </view>
         <text v-if="totalDiscountAmount > 0" class="text-slate-400 text-2.5">
-          已优惠 ¥{{ formatPrice(totalDiscountAmount) }}
+          {{ $t('checkout.discount', { amount: formatCurrency(totalDiscountAmount) }) }}
         </text>
       </view>
 
@@ -544,7 +562,13 @@ async function handleSubmit() {
         @tap="handleSubmit"
       >
         <text class="text-white text-base font-medium">
-          {{ submitting ? '提交中...' : syncingContext ? '更新中...' : '提交订单' }}
+          {{
+            submitting
+              ? $t('checkout.submitting')
+              : syncingContext
+                ? $t('cart.updating')
+                : $t('checkout.submit')
+          }}
         </text>
       </view>
     </view>

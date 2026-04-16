@@ -22,6 +22,7 @@ const AUTH_REQUIRED_PAGE_PATHS = new Set([
   '/subpkg-mine/address-list/index',
   '/subpkg-mine/address-edit/index',
   '/subpkg-mine/settings/index',
+  '/subpkg-mine/profile-name/index',
   '/subpkg-mine/after-sale/index',
 ]);
 

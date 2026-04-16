@@ -8,14 +8,11 @@ import { showErrorToast } from '@/utils/error';
 import { ensureSessionInitialized, refreshSession } from '@/services/session';
 import type { HaloProblemDetail } from '@/types/api';
 import mockGroups from '@/mock/index';
+import { translate } from '@/locales';
 
 const BEARER_AUTHENTICATE_PATTERN = /bearer/i;
 const INVALID_TOKEN_PATTERN = /error="?invalid_token"?/i;
 const INSUFFICIENT_SCOPE_PATTERN = /error="?insufficient_scope"?/i;
-const SERVER_ERROR_MESSAGE = '服务器内部错误，请稍后重试';
-const REQUEST_ERROR_MESSAGE = '请求失败，请稍后重试';
-const NETWORK_ERROR_MESSAGE = '网络连接失败，请检查网络后重试';
-
 interface ResponseLike {
   statusCode?: number;
   data?: unknown;
@@ -166,9 +163,9 @@ function handleUnexpectedStatus(problem: HaloProblemDetail, statusCode: number) 
   }
 
   if (statusCode >= 500) {
-    showErrorToast(problem?.detail ?? SERVER_ERROR_MESSAGE);
+    showErrorToast(problem?.detail ?? translate('common.serverError'));
   } else {
-    showErrorToast(REQUEST_ERROR_MESSAGE);
+    showErrorToast(translate('common.requestError'));
   }
 
   return rejectProblem(problem);
@@ -232,7 +229,7 @@ export const alovaInst = createAlova({
       return resolveResponse(response, method);
     },
     onError: async (error: unknown) => {
-      showErrorToast(NETWORK_ERROR_MESSAGE);
+      showErrorToast(translate('common.networkError'));
       return Promise.reject(error);
     },
   },

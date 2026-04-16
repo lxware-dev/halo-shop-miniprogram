@@ -215,7 +215,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
           @tap="goToSearch"
         >
           <TIcon name="search" v-bind="{ size: '28rpx', color: ICON_COLOR.muted }" />
-          <text class="flex-1 text-sm text-slate-400">搜索商品</text>
+          <text class="flex-1 text-sm text-slate-400">{{ $t('home.searchPlaceholder') }}</text>
         </view>
         <view
           v-else
@@ -262,7 +262,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
             class="text-sm font-medium"
             :class="sortType === 'default' ? 'text-brand' : 'text-slate-500'"
           >
-            综合
+            {{ $t('list.sort.default') }}
           </text>
         </view>
 
@@ -275,7 +275,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
             class="text-sm font-medium"
             :class="sortType === 'sales' ? 'text-brand' : 'text-slate-500'"
           >
-            销量
+            {{ $t('list.sort.sales') }}
           </text>
         </view>
 
@@ -296,7 +296,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
                 : 'text-slate-500'
             "
           >
-            价格
+            {{ $t('list.sort.price') }}
           </text>
           <view class="flex flex-col items-center gap-0.5">
             <text
@@ -343,7 +343,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
             />
           </view>
 
-          <AppEmpty v-else text="暂无相关商品" />
+          <AppEmpty v-else :text="$t('list.empty')" />
 
           <AppListFooter :loading="loadingMore" :has-more="!isLastPage" :total="products.length" />
         </template>

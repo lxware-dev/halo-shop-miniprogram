@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import TCascader from '@tdesign/uniapp/cascader/cascader.vue';
@@ -22,6 +23,7 @@ interface CascaderOption {
 
 // Full validation: mobile number or landline number (area code-number)
 const PHONE_FULL_REG = /^(?:1[3-9]\d{9}|0\d{2,3}[-\s]?\d{7,8})$/;
+const { t } = useI18n();
 
 const addressId = ref<number | null>(null);
 const isEdit = computed(() => addressId.value != null);
@@ -35,7 +37,9 @@ onLoad(async (options) => {
   if (options?.id) {
     addressId.value = Number(options.id);
   }
-  uni.setNavigationBarTitle({ title: isEdit.value ? '编辑收货地址' : '新增收货地址' });
+  uni.setNavigationBarTitle({
+    title: isEdit.value ? t('address.editTitle') : t('address.createTitle'),
+  });
   if (isEdit.value) {
     await loadAddressDetail();
   }
@@ -310,7 +314,7 @@ async function loadAddressDetail() {
       };
     }
   } catch {
-    uni.showToast({ title: '加载地址失败', icon: 'none' });
+    uni.showToast({ title: t('address.loadFailed'), icon: 'none' });
   }
 }
 
@@ -321,7 +325,7 @@ const pasteText = ref('');
 
 async function parseAddressText() {
   if (!pasteText.value.trim()) {
-    uni.showToast({ title: '请先输入地址文本', icon: 'none' });
+    uni.showToast({ title: t('address.pasteEmpty'), icon: 'none' });
     return;
   }
 
@@ -337,7 +341,7 @@ async function parseAddressText() {
   ].some(Boolean);
 
   if (!hasMatchedField) {
-    uni.showToast({ title: '暂未识别到有效地址信息', icon: 'none' });
+    uni.showToast({ title: t('address.parseFailed'), icon: 'none' });
     return;
   }
 
@@ -358,33 +362,33 @@ async function parseAddressText() {
     await prefillRegionByName(parsed.province, parsed.city, parsed.district);
   }
 
-  uni.showToast({ title: '识别完成，请核对信息', icon: 'none' });
+  uni.showToast({ title: t('address.parseDone'), icon: 'none' });
 }
 
 function validateForm(): boolean {
   const name = `${form.value.lastName}${form.value.firstName}`.trim();
   if (!name) {
-    uni.showToast({ title: '请填写收货人姓名', icon: 'none' });
+    uni.showToast({ title: t('address.receiverRequired'), icon: 'none' });
     return false;
   }
   if (!form.value.contactPhone) {
-    uni.showToast({ title: '请填写手机号码', icon: 'none' });
+    uni.showToast({ title: t('address.phoneRequired'), icon: 'none' });
     return false;
   }
   if (!PHONE_FULL_REG.test(form.value.contactPhone)) {
-    uni.showToast({ title: '手机号或座机号格式不正确', icon: 'none' });
+    uni.showToast({ title: t('address.phoneInvalid'), icon: 'none' });
     return false;
   }
   if (!form.value.provinceCode || !form.value.cityCode || !form.value.districtCode) {
-    uni.showToast({ title: '请选择所在地区', icon: 'none' });
+    uni.showToast({ title: t('address.regionRequired'), icon: 'none' });
     return false;
   }
   if (!form.value.streetAddress.trim()) {
-    uni.showToast({ title: '请填写详细地址', icon: 'none' });
+    uni.showToast({ title: t('address.streetRequired'), icon: 'none' });
     return false;
   }
   if (!form.value.postalCode?.trim()) {
-    uni.showToast({ title: '请填写邮政编码', icon: 'none' });
+    uni.showToast({ title: t('address.postalCodeRequired'), icon: 'none' });
     return false;
   }
   return true;
@@ -406,10 +410,10 @@ async function handleSave() {
     } else {
       await sendRequest(addressApi.createAddress(form.value));
     }
-    uni.showToast({ title: '保存成功', icon: 'success' });
+    uni.showToast({ title: t('address.saveSuccess'), icon: 'success' });
     setTimeout(() => uni.navigateBack(), 1200);
   } catch {
-    uni.showToast({ title: '保存失败，请重试', icon: 'none' });
+    uni.showToast({ title: t('address.saveFailed'), icon: 'none' });
   } finally {
     submitting.value = false;
   }
@@ -439,12 +443,12 @@ const fullName = computed({
         <view class="bg-white flex flex-col">
           <view class="flex items-center px-4 py-4.25 border-b border-solid border-slate-50">
             <view class="shrink-0 w-24">
-              <text class="text-slate-700 text-base">收货人</text>
+              <text class="text-slate-700 text-base">{{ t('address.receiver') }}</text>
             </view>
             <input
               v-model="fullName"
               class="flex-1 text-base text-slate-950 min-w-0"
-              placeholder="请填写收货人姓名"
+              :placeholder="t('address.receiverPlaceholder')"
               placeholder-style="color: #94a3b8"
               :maxlength="20"
             />
@@ -452,12 +456,12 @@ const fullName = computed({
 
           <view class="flex items-center px-4 py-4.25 border-b border-solid border-slate-50">
             <view class="shrink-0 w-24">
-              <text class="text-slate-700 text-base">手机号码</text>
+              <text class="text-slate-700 text-base">{{ t('address.phone') }}</text>
             </view>
             <input
               v-model="form.contactPhone"
               class="flex-1 text-base text-slate-950 min-w-0"
-              placeholder="请填写收货人手机号"
+              :placeholder="t('address.phonePlaceholder')"
               placeholder-style="color: #94a3b8"
               type="number"
               :maxlength="11"
@@ -469,14 +473,14 @@ const fullName = computed({
             @tap="cascaderVisible = true"
           >
             <view class="shrink-0 w-24">
-              <text class="text-slate-700 text-base">所在地区</text>
+              <text class="text-slate-700 text-base">{{ t('address.region') }}</text>
             </view>
             <view class="flex-1 flex items-center justify-between min-w-0">
               <text
                 :class="regionDisplayText ? 'text-slate-950' : 'text-slate-400'"
                 class="text-base"
               >
-                {{ regionDisplayText || '选择省、市、区/县' }}
+                {{ regionDisplayText || t('address.regionPlaceholder') }}
               </text>
               <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: '#94a3b8' }" />
             </view>
@@ -485,8 +489,8 @@ const fullName = computed({
             v-model:visible="cascaderVisible"
             :options="cascaderOptions"
             :value="cascaderValue"
-            title="选择所在地区"
-            placeholder="选择省、市、区/县"
+            :title="t('address.regionPickerTitle')"
+            :placeholder="t('address.regionPlaceholder')"
             :keys="{ value: 'code', label: 'name', children: 'children' }"
             @pick="onCascaderPick"
             @change="(e: any) => onCascaderChange(e)"
@@ -494,12 +498,12 @@ const fullName = computed({
 
           <view class="flex items-start p-4 border-b border-solid border-slate-50">
             <view class="shrink-0 pt-0.5 w-24">
-              <text class="text-slate-700 text-base">详细地址</text>
+              <text class="text-slate-700 text-base">{{ t('address.street') }}</text>
             </view>
             <textarea
               v-model="form.streetAddress"
               class="flex-1 text-base text-slate-950 min-w-0 h-20 line-height-relaxed"
-              placeholder="街道门牌、楼层房间号等信息"
+              :placeholder="t('address.streetPlaceholder')"
               placeholder-style="color: #94a3b8"
               :maxlength="200"
               auto-height
@@ -508,12 +512,12 @@ const fullName = computed({
 
           <view class="flex items-start p-4 border-b border-solid border-slate-50">
             <view class="shrink-0 pt-0.5 w-24">
-              <text class="text-slate-700 text-base">邮政编码</text>
+              <text class="text-slate-700 text-base">{{ t('address.postalCode') }}</text>
             </view>
             <input
               v-model="form.postalCode"
               class="flex-1 text-base text-slate-950 min-w-0"
-              placeholder="请填写邮政编码"
+              :placeholder="t('address.postalCodePlaceholder')"
               placeholder-style="color: #94a3b8"
               type="number"
               :maxlength="6"
@@ -521,7 +525,7 @@ const fullName = computed({
           </view>
         </view>
         <view class="bg-white flex items-center justify-between px-4 py-4">
-          <text class="text-slate-900 text-base">设为默认地址</text>
+          <text class="text-slate-900 text-base">{{ t('address.default') }}</text>
           <switch
             :checked="form.isDefault"
             color="#ee2b2b"
@@ -531,11 +535,11 @@ const fullName = computed({
         </view>
 
         <view class="bg-slate-50 flex flex-col gap-2 px-4 py-5">
-          <text class="text-slate-500 text-xs">粘贴整段文字，自动识别姓名、电话和地址</text>
+          <text class="text-slate-500 text-xs">{{ t('address.pasteHint') }}</text>
           <textarea
             v-model="pasteText"
             class="w-full text-xs text-slate-700 h-15 line-height-relaxed bg-transparent"
-            placeholder="例如：张三，13800138000，浙江省杭州市西湖区..."
+            :placeholder="t('address.pastePlaceholder')"
             placeholder-style="color: #94a3b8; font-size: 26rpx"
             :maxlength="500"
           />
@@ -544,7 +548,7 @@ const fullName = computed({
               class="flex items-center justify-center border border-solid border-brand/30 rounded-full px-3 py-1"
               @tap="parseAddressText"
             >
-              <text class="text-brand text-xs">识别</text>
+              <text class="text-brand text-xs">{{ t('address.parse') }}</text>
             </view>
           </view>
         </view>
@@ -560,7 +564,7 @@ const fullName = computed({
         @tap="handleSave"
       >
         <text class="text-white text-base font-medium">
-          {{ submitting ? '保存中...' : '确认保存' }}
+          {{ submitting ? t('address.saving') : t('address.save') }}
         </text>
       </view>
     </view>

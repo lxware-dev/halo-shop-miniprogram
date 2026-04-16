@@ -94,7 +94,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
             color: ICON_COLOR.muted,
           }"
         />
-        <text class="text-slate-400 text-sm flex-1">搜索商品</text>
+        <text class="text-slate-400 text-sm flex-1">{{ $t('category.searchPlaceholder') }}</text>
       </view>
     </view>
 
@@ -141,7 +141,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
     <view v-else-if="isInitialCategoriesLoading" class="flex-1" />
 
     <view v-else-if="categoriesError" class="flex-1 flex flex-col items-center justify-center">
-      <AppLoadError text="加载分类失败，请稍后重试" @retry="loadCategories" />
+      <AppLoadError :text="$t('category.loadFailed')" @retry="loadCategories" />
     </view>
 
     <view v-else class="flex flex-1 overflow-hidden">
@@ -186,7 +186,7 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
       >
         <view class="p-4 flex flex-col gap-4" :style="{ paddingBottom: contentPaddingBottom }">
           <view v-if="!activeCategory?.children?.length" class="flex flex-col items-center py-20">
-            <text class="text-slate-400 text-sm">暂无分类内容</text>
+            <text class="text-slate-400 text-sm">{{ $t('category.empty') }}</text>
           </view>
 
           <view v-else class="grid grid-cols-3 gap-2">

@@ -120,16 +120,18 @@ export default defineMock({
 
   /**
    * Update current user info
-   * PUT /apis/uc.api.halo.run/v1alpha1/users/-
+   * PUT /apis/api.console.halo.run/v1alpha1/users/-
    */
-  '[PUT]/apis/uc.api.halo.run/v1alpha1/users/-': ({ data }) => {
-    currentUser = {
-      ...currentUser,
-      spec: {
-        ...currentUser.spec,
-        ...(data as Record<string, unknown>),
-      },
-    };
+  '[PUT]/apis/api.console.halo.run/v1alpha1/users/-': ({ data }) => {
+    currentUser = data as User;
+    return currentUser;
+  },
+
+  /**
+   * Upload user avatar (mock: not called in mock mode, handled in userApi.uploadAvatar directly)
+   * POST /apis/api.console.halo.run/v1alpha1/users/-/avatar
+   */
+  '[POST]/apis/api.console.halo.run/v1alpha1/users/-/avatar': () => {
     return currentUser;
   },
 });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { onLoad, onReachBottom } from '@dcloudio/uni-app';
+import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppEmpty from '@/components/common/AppEmpty.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
@@ -11,12 +12,11 @@ import { useCart } from '@/hooks/useCart';
 import { useInitialLoading } from '@/hooks/useInitialLoading';
 import { usePagePullRefresh } from '@/hooks/usePullRefresh';
 import { sendRequest, useInfiniteQuery } from '@/hooks/useRequest';
-import { formatPrice } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 import { getPageResponseHasMore } from '@/utils/page';
 import {
   getOrderStatusInfo,
   canPayNow,
-  canCancelOrder,
   canViewLogistics,
   canConfirmReceive,
   canBuyAgain,
@@ -29,31 +29,31 @@ import { formatImageUrlWithThumbnail } from '@/helpers/image';
 
 const TAB_LIST = [
   {
-    label: '全部',
+    labelKey: 'order.tab.all',
     paymentStatuses: undefined,
     fulfillmentStatuses: undefined,
     statuses: undefined,
   },
   {
-    label: '待付款',
+    labelKey: 'order.tab.pendingPayment',
     paymentStatuses: ['PENDING'],
     fulfillmentStatuses: undefined,
     statuses: ['OPEN'],
   },
   {
-    label: '待发货',
+    labelKey: 'order.tab.pendingShipment',
     paymentStatuses: ['PAID'],
     fulfillmentStatuses: ['PENDING'],
     statuses: ['OPEN'],
   },
   {
-    label: '待收货',
+    labelKey: 'order.tab.pendingReceipt',
     paymentStatuses: ['PAID'],
     fulfillmentStatuses: ['PROCESSING', 'FULFILLED'],
     statuses: ['OPEN'],
   },
   {
-    label: '已完成',
+    labelKey: 'order.tab.completed',
     paymentStatuses: undefined,
     fulfillmentStatuses: undefined,
     statuses: ['ARCHIVED'],
@@ -62,6 +62,7 @@ const TAB_LIST = [
 
 const activeTab = ref(0);
 const PAGE_SIZE = 10;
+const { t } = useI18n();
 
 interface OrderListParams {
   paymentStatuses?: string[];
@@ -161,17 +162,17 @@ function onGoDetail(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/order-detail/index?orderCode=${order.orderCode}` });
 }
 
-function onCancelOrder(_order: OrderResponse) {
-  uni.showModal({
-    title: '取消订单',
-    content: '确认要取消该订单吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.showToast({ title: '暂未开放取消功能', icon: 'none' });
-      }
-    },
-  });
-}
+// function onCancelOrder(_order: OrderResponse) {
+//   uni.showModal({
+//     title: t('order.cancelTitle'),
+//     content: t('order.cancelContent'),
+//     success: (res) => {
+//       if (res.confirm) {
+//         uni.showToast({ title: t('order.cancelUnavailable'), icon: 'none' });
+//       }
+//     },
+//   });
+// }
 
 function onPayNow(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${order.orderCode}` });
@@ -179,16 +180,16 @@ function onPayNow(order: OrderResponse) {
 
 async function onConfirmReceive(order: OrderResponse) {
   uni.showModal({
-    title: '确认收货',
-    content: '确认已收到商品吗？',
+    title: t('order.confirmReceiveTitle'),
+    content: t('order.confirmReceiveContent'),
     success: async (res) => {
       if (res.confirm) {
         try {
           await sendRequest(orderApi.markAsReceived(order.orderCode!));
-          uni.showToast({ title: '确认收货成功', icon: 'success' });
+          uni.showToast({ title: t('order.confirmReceiveSuccess'), icon: 'success' });
           await refreshOrders();
         } catch {
-          uni.showToast({ title: '操作失败', icon: 'none' });
+          uni.showToast({ title: t('order.actionFailed'), icon: 'none' });
         }
       }
     },
@@ -205,7 +206,7 @@ const buyingAgain = ref(false);
 async function onBuyAgain(order: OrderResponse) {
   const items = order.items?.filter((i) => i.productVariantId != null && (i.quantity ?? 0) > 0);
   if (!items?.length) {
-    uni.showToast({ title: '订单暂无商品', icon: 'none' });
+    uni.showToast({ title: t('order.emptyItemsToast'), icon: 'none' });
     return;
   }
   buyingAgain.value = true;
@@ -217,14 +218,14 @@ async function onBuyAgain(order: OrderResponse) {
       })),
     );
     if (ok) {
-      uni.showToast({ title: '已加入购物车', icon: 'success', duration: 1500 });
+      uni.showToast({ title: t('order.addedToCart'), icon: 'success', duration: 1500 });
       goToCart();
     } else {
       uni.showModal({
         title: '',
-        content: '订单中的商品都卖光啦，再看看其他商品吧~',
+        content: t('order.soldOutFallback'),
         showCancel: false,
-        confirmText: '确定',
+        confirmText: t('common.confirm'),
         confirmColor: '#ee2b2b',
       });
     }
@@ -233,7 +234,7 @@ async function onBuyAgain(order: OrderResponse) {
   }
 }
 
-const showCancel = canCancelOrder;
+// const showCancel = canCancelOrder;
 const showPayNow = canPayNow;
 const showViewLogistics = canViewLogistics;
 const showConfirmReceive = canConfirmReceive;
@@ -257,7 +258,7 @@ function goShopping() {
       <view class="flex items-stretch overflow-x-auto px-2 h-12.5">
         <view
           v-for="(tab, idx) in TAB_LIST"
-          :key="tab.label"
+          :key="tab.labelKey"
           class="flex flex-col items-center justify-center px-4 shrink-0 relative"
           @tap="onTabChange(idx)"
         >
@@ -265,7 +266,7 @@ function goShopping() {
             class="text-sm font-medium"
             :class="activeTab === idx ? 'text-brand' : 'text-slate-500'"
           >
-            {{ tab.label }}
+            {{ $t(tab.labelKey) }}
           </text>
           <!-- Active underline -->
           <view
@@ -302,9 +303,13 @@ function goShopping() {
 
     <AppEmpty
       v-else-if="visibleOrders.length === 0"
-      :text="activeTab === 0 ? '还没有订单' : `暂无${TAB_LIST[activeTab].label}的订单`"
-      subtext="去挑选心仪的商品，完成你的第一笔订单"
-      cta-text="去购物"
+      :text="
+        activeTab === 0
+          ? $t('order.emptyAll')
+          : $t('order.emptyByTab', { label: $t(TAB_LIST[activeTab].labelKey) })
+      "
+      :subtext="$t('order.emptySubtitle')"
+      :cta-text="$t('order.goShopping')"
       @cta="goShopping"
     />
 
@@ -358,7 +363,7 @@ function goShopping() {
               </view>
               <view class="flex items-end justify-between">
                 <text class="text-sm text-slate-950 font-bold">
-                  ¥{{ formatPrice(item.unitPrice) }}
+                  {{ formatCurrency(item.unitPrice) }}
                 </text>
                 <text class="text-xs text-slate-400">x{{ item.quantity }}</text>
               </view>
@@ -366,7 +371,9 @@ function goShopping() {
           </view>
 
           <view v-if="(order.items?.length ?? 0) > 3" class="flex items-center justify-center py-1">
-            <text class="text-xs text-slate-400"> 共 {{ order.items?.length }} 件商品 </text>
+            <text class="text-xs text-slate-400">
+              {{ $t('order.itemCount', { count: order.items?.length ?? 0 }) }}
+            </text>
           </view>
         </view>
 
@@ -375,27 +382,28 @@ function goShopping() {
           @tap.stop
         >
           <text class="text-xs text-slate-500 mr-1">
-            合计
+            {{ $t('order.total') }}
             <text class="text-sm text-slate-950 font-bold">
-              ¥{{ formatPrice(order.totalAmount) }}
+              {{ formatCurrency(order.totalAmount) }}
             </text>
           </text>
 
           <view class="flex items-center gap-2">
-            <view
+            <!-- TODO: cancel order action -->
+            <!-- <view
               v-if="showCancel(order)"
               class="flex items-center py-2 px-3.5 py-1.5 rounded-full border border-solid border-slate-200"
               @tap.stop="onCancelOrder(order)"
             >
-              <text class="text-xs text-slate-950">取消订单</text>
-            </view>
+              <text class="text-xs text-slate-950">{{ $t('order.cancel') }}</text>
+            </view> -->
 
             <view
               v-if="showPayNow(order)"
               class="flex items-center py-2 px-4 rounded-full bg-brand shadow-brand-btn"
               @tap.stop="onPayNow(order)"
             >
-              <text class="text-xs text-white font-medium">立即支付</text>
+              <text class="text-xs text-white font-medium">{{ $t('order.payNow') }}</text>
             </view>
 
             <view
@@ -403,7 +411,7 @@ function goShopping() {
               class="flex items-center py-2 px-3.5 rounded-full border border-solid border-slate-200"
               @tap.stop="onViewLogistics(order)"
             >
-              <text class="text-xs text-slate-950">查看物流</text>
+              <text class="text-xs text-slate-950">{{ $t('order.viewLogistics') }}</text>
             </view>
 
             <view
@@ -411,7 +419,7 @@ function goShopping() {
               class="flex items-center px-3.5 py-2 rounded-full border border-solid border-brand"
               @tap.stop="onConfirmReceive(order)"
             >
-              <text class="text-xs text-brand">确认收货</text>
+              <text class="text-xs text-brand">{{ $t('order.confirmReceive') }}</text>
             </view>
 
             <view
@@ -420,7 +428,7 @@ function goShopping() {
               :class="{ 'opacity-60': buyingAgain }"
               @tap.stop="!buyingAgain && onBuyAgain(order)"
             >
-              <text class="text-xs text-slate-950"> 再次购买 </text>
+              <text class="text-xs text-slate-950"> {{ $t('order.buyAgain') }} </text>
             </view>
           </view>
         </view>
@@ -437,7 +445,7 @@ function goShopping() {
         </template>
         <template v-else-if="isLastPage && visibleOrders.length > 0">
           <view class="flex-1 h-[1rpx] bg-slate-100 max-w-16" />
-          <text class="text-2.5 text-slate-300 tracking-0.5">已经到底了</text>
+          <text class="text-2.5 text-slate-300 tracking-0.5">{{ $t('order.bottomReached') }}</text>
           <view class="flex-1 h-[1rpx] bg-slate-100 max-w-16" />
         </template>
       </view>
