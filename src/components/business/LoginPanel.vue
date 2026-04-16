@@ -1,0 +1,513 @@
+<script setup lang="ts">
+import { computed, ref, watch, onMounted } from 'vue';
+import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import { useI18n } from 'vue-i18n';
+import AppLogo from '@/components/common/AppLogo.vue';
+import { ICON_COLOR } from '@/helpers/icon';
+import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { openLegalDocument } from '@/helpers/legal';
+import { useAppConfig } from '@/config';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserStore } from '@/store';
+import { isAnonymousUser } from '@/store/modules/user';
+import { authApi } from '@/api';
+import { sendRequest } from '@/hooks/useRequest';
+import type { LoginMethod } from '@/config/types';
+import type { User } from '@halo-dev/api-client';
+import LoginMethodPhoneCode from './login/LoginMethodPhoneCode.vue';
+import LoginMethodEmail from './login/LoginMethodEmail.vue';
+import LoginMethodHaloAccount from './login/LoginMethodHaloAccount.vue';
+
+const props = withDefaults(
+  defineProps<{
+    mode?: 'drawer' | 'page';
+    forceMethods?: boolean;
+    showClose?: boolean;
+    pageOffsetBottom?: number;
+  }>(),
+  {
+    mode: 'page',
+    forceMethods: false,
+    showClose: false,
+    pageOffsetBottom: 0,
+  },
+);
+
+const emit = defineEmits<{
+  success: [];
+  close: [];
+}>();
+
+const appConfig = useAppConfig();
+const { onLoginSuccess, syncProfile } = useAuth();
+const userStore = useUserStore();
+const { t } = useI18n();
+
+type PanelView = 'loading' | 'bound' | 'methods';
+
+const panelView = ref<PanelView>('loading');
+const boundResult = ref<{ user: User | null } | null>(null);
+const activeMethod = ref<LoginMethod | null>(null);
+const agreed = ref(false);
+const boundLoading = ref(false);
+
+const loginMethods = appConfig.auth.loginMethods;
+
+interface MethodMeta {
+  label: string;
+  shortLabel?: string;
+  icon: string;
+  desc?: string;
+}
+
+const methodMeta: Record<LoginMethod, MethodMeta> = {
+  phoneQuick: {
+    label: t('login.phoneQuick'),
+    shortLabel: t('login.phoneQuickShort'),
+    icon: 'mobile',
+    desc: t('login.phoneQuickDesc'),
+  },
+  phoneCode: {
+    label: t('login.phoneCode'),
+    shortLabel: t('login.phoneCodeShort'),
+    icon: 'mobile',
+    desc: t('login.phoneCodeDesc'),
+  },
+  email: {
+    label: t('login.email'),
+    shortLabel: t('login.email'),
+    icon: 'mail',
+    desc: t('login.emailDesc'),
+  },
+  haloAccount: {
+    label: t('login.haloAccount'),
+    shortLabel: t('login.haloAccountShort'),
+    icon: 'user-circle',
+    desc: t('login.haloAccountDesc'),
+  },
+};
+
+function resetState() {
+  agreed.value = false;
+  boundLoading.value = false;
+  activeMethod.value = null;
+  panelView.value = 'loading';
+  boundResult.value = null;
+}
+
+async function initializeView(forceMethods = false) {
+  resetState();
+
+  if (forceMethods) {
+    userStore.setProfile(null);
+    panelView.value = 'methods';
+    return;
+  }
+
+  try {
+    const user = await syncProfile();
+    if (!isAnonymousUser(user)) {
+      boundResult.value = { user };
+      panelView.value = 'bound';
+      return;
+    }
+
+    userStore.setProfile(null);
+  } catch {
+    userStore.setProfile(null);
+  }
+
+  boundResult.value = null;
+  panelView.value = 'methods';
+}
+
+watch(
+  () => props.forceMethods,
+  (forceMethods, previousValue) => {
+    if (forceMethods && forceMethods !== previousValue) {
+      initializeView(true);
+    }
+  },
+);
+
+onMounted(() => {
+  initializeView(props.forceMethods);
+});
+
+function close() {
+  emit('close');
+}
+
+function onToggleAgree() {
+  agreed.value = !agreed.value;
+}
+
+function onAgreementTap(type: 'user' | 'privacy') {
+  openLegalDocument(type === 'user' ? 'userAgreement' : 'privacyPolicy');
+}
+
+function selectMethod(method: LoginMethod) {
+  activeMethod.value = method;
+}
+
+function backToMethods() {
+  activeMethod.value = null;
+}
+
+function switchToMethods() {
+  panelView.value = 'methods';
+  activeMethod.value = null;
+}
+
+const secondaryMethods = computed(() =>
+  loginMethods.supported.filter((method) => method !== loginMethods.primary),
+);
+
+const secondaryMethodsGridClass = computed(() => {
+  if (secondaryMethods.value.length >= 4) {
+    return 'grid-cols-4';
+  }
+  if (secondaryMethods.value.length === 3) {
+    return 'grid-cols-3';
+  }
+  if (secondaryMethods.value.length === 2) {
+    return 'grid-cols-2 max-w-72 mx-auto';
+  }
+  return 'grid-cols-1 max-w-36 mx-auto';
+});
+
+const pagePanelBodyStyle = computed(() => {
+  if (props.mode !== 'page' || props.pageOffsetBottom <= 0) {
+    return undefined;
+  }
+  return {
+    transform: `translateY(-${Math.round(props.pageOffsetBottom / 2)}px)`,
+  };
+});
+
+const appNameStyle = computed(() => ({
+  fontSize: appConfig.app.nameFontSize || '48rpx',
+}));
+
+const phoneQuickOpenType = computed(() => (agreed.value ? 'getPhoneNumber' : undefined));
+
+function getSecondaryMethodLabel(method: LoginMethod) {
+  return methodMeta[method].shortLabel ?? methodMeta[method].label;
+}
+
+async function handleLoginResult(result: any) {
+  await onLoginSuccess(result);
+  emit('success');
+}
+
+async function handlePhoneQuickResult(e: any) {
+  if (!agreed.value) {
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
+    return;
+  }
+  const phoneCode = e?.detail?.code;
+  if (!phoneCode) {
+    const errno = e?.detail?.errno;
+    if (errno !== 1) {
+      uni.showToast({ title: t('login.getPhoneFailed'), icon: 'none' });
+    }
+    return;
+  }
+  boundLoading.value = true;
+  try {
+    const result = await sendRequest(authApi.loginByPhoneQuick(phoneCode));
+    await handleLoginResult(result);
+  } catch {
+    uni.showToast({ title: t('login.failed'), icon: 'none' });
+  } finally {
+    boundLoading.value = false;
+  }
+}
+
+function onPrimaryPhoneQuick(e: any) {
+  handlePhoneQuickResult(e);
+}
+
+function onSecondaryPhoneQuick(e: any) {
+  handlePhoneQuickResult(e);
+}
+
+function onPhoneQuickTap() {
+  if (!agreed.value) {
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
+  }
+}
+
+function handleBoundLogin() {
+  if (!agreed.value) {
+    uni.showToast({ title: t('login.agreementRequired'), icon: 'none' });
+    return;
+  }
+  if (!boundResult.value?.user) {
+    return;
+  }
+  userStore.setHasLogin(true);
+  userStore.setProfile(boundResult.value.user);
+  emit('success');
+}
+
+const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
+</script>
+
+<template>
+  <view class="bg-white w-full flex flex-col" :class="panelClass">
+    <view
+      v-if="props.mode === 'drawer'"
+      class="flex items-center justify-center pt-3 pb-2 shrink-0"
+    >
+      <view class="bg-slate-200 rounded-full w-10 h-1" />
+    </view>
+
+    <view
+      v-if="props.showClose"
+      class="flex justify-end px-5"
+      :class="props.mode === 'drawer' ? 'pt-1 pb-2' : 'pt-4 pb-2'"
+    >
+      <view class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center" @tap="close">
+        <TIcon name="close" v-bind="{ size: '32rpx', color: ICON_COLOR.muted }" />
+      </view>
+    </view>
+
+    <view
+      class="flex flex-col"
+      :class="props.mode === 'drawer' ? '' : 'flex-1 justify-center pb-10'"
+      :style="pagePanelBodyStyle"
+    >
+      <view
+        class="flex flex-col items-center gap-3"
+        :class="props.mode === 'drawer' ? 'py-2' : 'px-6 pt-6 pb-5'"
+      >
+        <AppLogo />
+        <text class="text-slate-950 font-bold" :style="appNameStyle">{{ appConfig.app.name }}</text>
+      </view>
+
+      <view v-if="panelView === 'loading'" class="flex flex-col items-center gap-3 py-10 px-6">
+        <view
+          class="w-10 h-10 rounded-full border-4 border-brand border-t-transparent animate-spin"
+        />
+        <text class="text-slate-400 text-sm">{{ $t('login.verifying') }}</text>
+      </view>
+
+      <view v-else-if="panelView === 'bound'" class="flex flex-col px-6 pt-3 gap-3">
+        <view
+          class="flex items-center gap-3 px-4 py-3.5 rounded-3 bg-slate-50 border border-solid border-brand/20"
+        >
+          <view
+            class="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center shrink-0 overflow-hidden"
+          >
+            <image
+              v-if="boundResult?.user?.spec?.avatar"
+              :src="formatImageUrlWithThumbnail(boundResult.user.spec.avatar, 'S')"
+              mode="aspectFill"
+              class="w-full h-full"
+            />
+            <TIcon v-else name="user-filled" v-bind="{ size: '48rpx', color: ICON_COLOR.muted }" />
+          </view>
+          <view class="flex flex-col flex-1 min-w-0 gap-0.5">
+            <text class="text-slate-950 text-sm font-semibold truncate">
+              {{ boundResult?.user?.spec?.displayName ?? $t('common.unknownUser') }}
+            </text>
+            <text v-if="boundResult?.user?.spec?.email" class="text-slate-400 text-xs truncate">
+              {{ boundResult.user.spec.email }}
+            </text>
+          </view>
+          <view class="px-2 py-1 rounded-full bg-green-50 shrink-0">
+            <text class="text-green-600 text-xs">{{ $t('login.bound') }}</text>
+          </view>
+        </view>
+
+        <view
+          class="w-full flex items-center justify-center rounded-full py-3.5 mt-1"
+          :class="agreed ? 'bg-brand' : 'bg-brand-muted'"
+          :style="{ opacity: boundLoading ? '0.7' : '1' }"
+          @tap="handleBoundLogin"
+        >
+          <text class="text-white text-base font-bold">
+            {{ boundLoading ? $t('login.loggingIn') : $t('login.phoneQuickShort') }}
+          </text>
+        </view>
+
+        <view class="flex items-center justify-center py-1" @tap="switchToMethods">
+          <text class="text-brand text-sm font-medium">{{ $t('login.useOtherMethods') }}</text>
+        </view>
+      </view>
+
+      <view v-else-if="panelView === 'methods'" class="flex flex-col px-6 pt-2 gap-3">
+        <view v-if="activeMethod === null" class="flex flex-col gap-4">
+          <!-- #ifdef MP-WEIXIN -->
+          <button
+            v-if="loginMethods.primary === 'phoneQuick'"
+            :open-type="phoneQuickOpenType"
+            class="login-method-button w-full"
+            @tap="onPhoneQuickTap"
+            @getphonenumber="onPrimaryPhoneQuick"
+          >
+            <view
+              class="w-full flex items-center justify-center gap-2 rounded-full py-4"
+              :class="agreed ? 'bg-brand' : 'bg-brand-muted'"
+            >
+              <text class="text-base font-bold text-white">
+                {{ methodMeta[loginMethods.primary].label }}
+              </text>
+            </view>
+          </button>
+          <!-- #endif -->
+          <!-- #ifndef MP-WEIXIN -->
+          <view
+            v-if="loginMethods.primary === 'phoneQuick'"
+            class="w-full flex items-center justify-center gap-2 rounded-full py-4 bg-brand-muted"
+          >
+            <text class="text-white text-base font-bold">{{ $t('login.phoneQuick') }}</text>
+          </view>
+          <!-- #endif -->
+          <view
+            v-if="loginMethods.primary !== 'phoneQuick'"
+            class="w-full flex items-center justify-center gap-2 rounded-full py-4 bg-brand active:opacity-80"
+            @tap="selectMethod(loginMethods.primary)"
+          >
+            <TIcon
+              :name="methodMeta[loginMethods.primary].icon"
+              v-bind="{ size: '40rpx', color: ICON_COLOR.inverse }"
+            />
+            <text class="text-white text-base font-bold">
+              {{ methodMeta[loginMethods.primary].label }}
+            </text>
+          </view>
+
+          <view v-if="secondaryMethods.length > 0" class="flex flex-col gap-3">
+            <view class="flex items-center gap-3">
+              <view class="flex-1 h-[1rpx] bg-slate-100" />
+              <text class="text-slate-400 text-xs shrink-0">{{ $t('login.otherMethods') }}</text>
+              <view class="flex-1 h-[1rpx] bg-slate-100" />
+            </view>
+            <view class="grid w-full gap-x-3 gap-y-4" :class="secondaryMethodsGridClass">
+              <view
+                v-for="method in secondaryMethods"
+                :key="method"
+                class="min-w-0 flex flex-col items-center"
+              >
+                <!-- #ifdef MP-WEIXIN -->
+                <button
+                  v-if="method === 'phoneQuick'"
+                  :open-type="phoneQuickOpenType"
+                  class="login-method-button w-full flex flex-col items-center gap-2 active:opacity-70"
+                  @tap="onPhoneQuickTap"
+                  @getphonenumber="onSecondaryPhoneQuick"
+                >
+                  <view
+                    class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"
+                  >
+                    <TIcon
+                      :name="methodMeta[method].icon"
+                      v-bind="{
+                        size: '44rpx',
+                        color: agreed ? ICON_COLOR.default : ICON_COLOR.muted,
+                      }"
+                    />
+                  </view>
+                  <text
+                    class="min-h-[64rpx] px-1 text-xs leading-4 text-center break-all flex items-center justify-center"
+                    :class="agreed ? 'text-slate-500' : 'text-slate-300'"
+                  >
+                    {{ getSecondaryMethodLabel(method) }}
+                  </text>
+                </button>
+                <!-- #endif -->
+                <view
+                  v-if="method !== 'phoneQuick'"
+                  class="w-full flex flex-col items-center gap-2 active:opacity-70"
+                  @tap="selectMethod(method)"
+                >
+                  <view
+                    class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center"
+                  >
+                    <TIcon
+                      :name="methodMeta[method].icon"
+                      v-bind="{ size: '44rpx', color: ICON_COLOR.default }"
+                    />
+                  </view>
+                  <text
+                    class="min-h-[64rpx] px-1 text-slate-500 text-xs leading-4 text-center break-all flex items-center justify-center"
+                  >
+                    {{ getSecondaryMethodLabel(method) }}
+                  </text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view v-else class="flex flex-col gap-3">
+          <view class="flex items-center gap-2 mb-1">
+            <view
+              class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center"
+              @tap="backToMethods"
+            >
+              <TIcon name="chevron-left" v-bind="{ size: '28rpx', color: ICON_COLOR.default }" />
+            </view>
+            <text class="text-slate-900 font-semibold text-sm">
+              {{ methodMeta[activeMethod].label }}
+            </text>
+          </view>
+
+          <LoginMethodPhoneCode
+            v-if="activeMethod === 'phoneCode'"
+            :agreed="agreed"
+            @success="handleLoginResult"
+          />
+          <LoginMethodEmail
+            v-else-if="activeMethod === 'email'"
+            :agreed="agreed"
+            @success="handleLoginResult"
+          />
+          <LoginMethodHaloAccount
+            v-else-if="activeMethod === 'haloAccount'"
+            :agreed="agreed"
+            @success="handleLoginResult"
+          />
+        </view>
+      </view>
+
+      <view v-if="panelView !== 'loading'" class="flex items-center gap-1 px-6 pt-4 pb-1">
+        <view
+          class="w-3 h-3 rounded-full border-2 border-solid shrink-0 flex items-center justify-center"
+          :class="agreed ? 'bg-brand border-brand' : 'bg-white border-slate-300'"
+          @tap="onToggleAgree"
+        >
+          <TIcon name="check" v-bind="{ size: '24rpx', color: ICON_COLOR.inverse }" />
+        </view>
+        <view class="flex flex-wrap items-center line-height-tight">
+          <text class="text-slate-500 text-xs">{{ $t('login.readAndAgree') }}</text>
+          <text class="text-brand text-xs font-medium" @tap.stop="onAgreementTap('user')">
+            {{ $t('legal.userAgreement') }}
+          </text>
+          <text class="text-slate-500 text-xs">{{ $t('login.and') }}</text>
+          <text class="text-brand text-xs font-medium" @tap.stop="onAgreementTap('privacy')">
+            {{ $t('legal.privacyPolicy') }}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <view class="pb-safe-sm" />
+  </view>
+</template>
+
+<style scoped lang="scss">
+.login-method-button {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  line-height: inherit;
+  border-radius: 0;
+}
+
+.login-method-button::after {
+  border: none;
+}
+</style>
