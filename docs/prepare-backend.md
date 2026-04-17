@@ -15,7 +15,7 @@
 
 ### 微信小程序登录认证
 
-<!-- TODO: 截图 — 商店设置 → 小程序 → 微信小程序登录认证区域（含 App ID 与凭证字段） -->
+![image-20260417120958261](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-wechat-mini-program.png)
 
 勾选**启用微信小程序登录**，并填写以下两项凭证：
 
@@ -24,7 +24,7 @@
 | App ID | 微信小程序 AppID，在[微信公众平台](https://mp.weixin.qq.com) → 开发管理 → 开发设置中获取 |
 | 凭证   | 即 `appSecret`，在同一页面获取；                                                         |
 
-<!-- TODO: 截图 — 微信公众平台 → 开发管理 → 开发设置，标注 AppID 与 AppSecret 所在位置 -->
+![image-20260417121620411](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-appid.png)
 
 > [!WARNING]
 > `appSecret` 属于高权限密钥，请勿明文写入配置文件或提交到代码仓库。在 Halo 中通过凭证管理存储可避免泄露风险。
@@ -36,7 +36,7 @@
 
 ### 横幅轮播图
 
-<!-- TODO: 截图 — 商店设置 → 小程序 → 横幅轮播图区域（含已有条目列表与「添加横幅」按钮） -->
+![image-20260417121926531](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-banner.png)
 
 在同一页面的**横幅轮播图**区域，点击**添加横幅**，为首页顶部 Banner 配置轮播内容。
 
@@ -58,7 +58,7 @@
 
 ### 快捷入口
 
-<!-- TODO: 截图 — 商店设置 → 小程序 → 快捷入口区域（含已有条目列表与「添加入口」按钮） -->
+![image-20260417122017168](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-quick-entrance.png)
 
 在同一页面继续向下，找到**快捷入口**区域，点击**添加入口**，配置首页的快捷分类入口。
 
@@ -88,21 +88,35 @@
 
 在 Halo 后台填写支付配置之前，需要先在微信侧完成以下准备：
 
+> [!tip]
+>
+> 关于微信侧的微信支付对接的详细文档，请查阅 [小程序支付](https://pay.weixin.qq.com/doc/v3/merchant/4015459512)。
+
 **1. 申请微信支付商户号**
 
 前往[微信支付商户平台](https://pay.weixin.qq.com)注册并完成资质审核，获得商户号（mch_id）。已有商户号可跳过此步。
 
-**2. 绑定小程序 AppID**
+**2.商户号开通 JSAPI 支付权限**
+
+按照微信支付商户平台的[申请JSAPI支付权限指引(小程序支付场景)](https://pay.weixin.qq.com/doc/v3/merchant/4012791895) 文档，申请 JSAPI 支付权限。已申请过 JSAPI 支付权限的商户可跳过此步。
+
+**3. 商户号授权绑定小程序 AppID**
 
 在微信支付商户平台 → **产品中心 → AppID 账号管理**中，将小程序的 AppID 与商户号关联绑定，否则支付请求会因 AppID 与商户号不匹配而失败。
 
-<!-- TODO: 截图 — 微信支付商户平台 → 产品中心 → AppID 账号管理，标注绑定入口 -->
+![image-20260417124059370](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-associate-appid.png)
 
-**3. 生成 API v3 私钥**
+**3. 生成商户 API 证书**
 
-在微信支付商户平台 → **账户中心 → API 安全**中，生成并下载 API v3 私钥（`.pem` 文件）。
+在微信支付商户平台 → **账户中心 → API 安全 → 申请 API 证书**中，使用证书工具生成并下载 API v3 私钥（`.pem` 文件）
 
-<!-- TODO: 截图 — 微信支付商户平台 → 账户中心 → API 安全，标注商户号与下载私钥的操作入口 -->
+可以阅读微信详细指引文档 [获取商户 API 证书](https://kf.qq.com/faq/161222NneAJf161222U7fARv.html) 进行操作。
+
+![image-20260417124715313](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-api-certificate.png)
+
+获取到证书文件夹后，请妥善保管 `apiclient_key.pem` 私钥文件，后续将需要在 Halo 后台上传此私钥文件。
+
+![image-20260417125221311](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-certificate-private-key.png)
 
 > [!WARNING]
 > 私钥文件只能在生成时下载一次，请妥善保管。若丢失，需重新生成。
@@ -113,43 +127,69 @@
 
 #### 在 Halo 后台填写配置
 
-<!-- TODO: 截图 — 商店设置 → 支付方式 → 已配置支付方式列表（含「微信小程序支付」条目） -->
+![image-20260417130350725](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-create-payment-method.png)
 
 点击**新建**，或在已有的**微信小程序支付**条目上点击**编辑**，填写以下信息：
 
-<!-- TODO: 截图 — 编辑支付方式弹窗（含应用 ID、商户号、商户私钥等字段） -->
-
-| 字段     | 说明                                                                        |
-| -------- | --------------------------------------------------------------------------- |
-| 启用     | 开关打开后该支付方式才会在前端出现                                          |
-| 名称     | 展示给用户的支付方式名称，如「微信支付」                                    |
-| 场景     | 选择**小程序支付**                                                          |
-| 应用 ID  | 微信小程序 AppID，与登录认证处保持一致                                      |
-| 商户号   | 微信支付商户平台的商户号（mch_id）                                          |
-| 商户私钥 | 微信支付 API v3 私钥（`.pem` 文件内容），即上方步骤中下载的 `.pem` 文件内容 |
+| 字段           | 说明                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| 支付提供商     | 必须选择**微信支付**                                                                     |
+| 启用           | 开关打开后该支付方式才会在前端出现                                                       |
+| 名称           | 展示给用户的支付方式名称，如「微信小程序支付」                                           |
+| 场景           | 必须选择**小程序支付**                                                                   |
+| 应用 ID        | 微信小程序 AppID，与登录认证处保持一致，需要与商户号绑定。                               |
+| 商户号         | 微信支付商户平台的商户号（mch_id），需要与应用 ID 绑定。                                 |
+| 商户私钥       | 商户 API 证书私钥（`.pem` 文件内容），即步骤 2.3 中所获取的 `apiclient_key.pem` 文件内容 |
+| 商户证书序列号 |                                                                                          |
+| API V3 密钥    |                                                                                          |
 
 > [!WARNING]
-> 商户私钥属于高敏感凭证，请通过 Halo 的凭证管理存储，勿直接粘贴到普通文本字段或提交到代码仓库。
+> 商户私钥与 API V3 密钥属于高敏感凭证，请勿泄露。
 
 ---
 
-## 三、Halo 开放注册（可选）
+## 三、配置外部访问地址（可选）
 
-如果在小程序中开启了手机号快速登录（即小程序配置 `auth.loginMethods.primary` 或 `auth.loginMethods.supported` 中包含 `phoneQuick`），当用户手机号不存在于当前 Halo 用户体系中时，登录流程通常会转为**自动注册**。此时需要在 Halo 后台开启**开放注册**，否则用户会出现登录失败、注册被拒绝或无法完成首次绑定。
+如果需要**联调或上线支付**，建议务必配置 Halo 的**外部访问地址**。 对于仅本地演示、暂时不接支付的场景，这一步可以先跳过。
+
+当小程序中使用了支付功能时，若未正确配置，支付通知地址可能会被生成为内网地址、容器地址或 `localhost`，导致支付服务提供方无法正常回调 Halo 商城接口，最终表现为**用户已经付款，但系统无法及时得知支付结果，订单状态也不会自动更新**。
+
+只要进入真实支付联调，就应尽快补齐。
+
+### 配置方式
+
+前往 **Halo 后台 → 概览 → 外部访问地址** 中，完成外部访问地址的修改。
+
+![image-20260417164244264](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-external-url.png)
+
+> [!IMPORTANT]
+> 这里填写的必须是用户和支付方服务器都能访问到的**完整外网地址**，例如 `https://shop.example.com`，而不是 `http://127.0.0.1:8090`、`http://localhost:8090`、`http://192.168.x.x:8090` 或 Docker 容器内部地址。
+
+## 四、Halo 开放注册（可选）
+
+如果在小程序中开启了**手机号快速登录**（即小程序配置 `auth.loginMethods.primary` 或 `auth.loginMethods.supported` 中包含 `phoneQuick`），需要在 Halo 端开启 **开放注册**功能，如果不使用手机号快速登录，则可跳过此步。
+
+当用户手机号不存在于当前 Halo 用户体系中时，登录流程通常会转为**自动注册**。此时需要在 Halo 后台开启**开放注册**，否则用户会出现登录失败、注册被拒绝或无法完成首次绑定。
 
 进入 Halo 管理端，依次点击**设置 → 用户设置**，找到**开放注册**并开启。
 
-## 完成后的下一步
+![image-20260417131139000](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/backend-open-reg.png)
 
-完成以上配置后，先回到前端确认 `src/manifest.json` 中的 `appid` 与 Halo 后台填写的 App ID 一致，再重新进入小程序查看首页是否已经出现横幅轮播图和快捷入口。
+## 下一步
 
-如果你已经配置了微信小程序支付，下一步就可以在体验版或真机上跑一遍下单到支付的完整流程；如果当前登录方式包含 `phoneQuick`，并且希望新用户首次登录时可自动注册，还需要继续到 **设置 → 用户设置** 中开启**开放注册**。
+完成以上配置后，建议先回到前端和真机环境做一轮基础联调，重点确认以下几项：
+
+1. `src/manifest.json` 中的 `appid` 与 Halo 后台填写的 App ID 保持一致。
+2. 小程序首页已经正常展示横幅轮播图和快捷入口。
+3. 登录流程可以正常完成，包含你当前启用的登录方式。
+4. 如果已接入支付，需确认 Halo 的**外部访问地址**已经正确配置，并实际测试一次下单、支付、支付回调与订单状态更新流程。
+
+如果这些都已经验证通过，并且你准备继续推进**体验版、提审或正式上线**，下一步可以阅读 [上线前准备](./prepare-go-live.md)，继续检查生产域名、微信公众平台合法域名、支付验收与真机验证等上线前事项。
 
 ## 相关文档
 
 - [prepare.md](./prepare.md) — 文档总览与阅读指引
 - [prepare-local.md](./prepare-local.md) — 本地环境搭建
 - [config.md](./config.md) — 完整配置字段说明
-- [payments.md](./payments.md) — 登录与支付接入
-- [prepare-go-live.md](./prepare-go-live.md) — 上线前域名与公众平台配置
+- [prepare-go-live.md](./prepare-go-live.md) — 上线前域名、支付验收与真机验证
 - [faq.md](./faq.md) — 常见问题排查

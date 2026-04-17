@@ -123,25 +123,6 @@ export interface AppConfig {
     };
   };
   /**
-   * 开发调试配置。
-   */
-  dev: {
-    /**
-     * 本地开发时可选的 Basic Auth 配置。
-     * 不填写时表示不开启该调试能力。
-     */
-    basicAuth?: {
-      /**
-       * Basic Auth 用户名。
-       */
-      username: string;
-      /**
-       * Basic Auth 密码。
-       */
-      password: string;
-    };
-  };
-  /**
    * 业务侧展示与行为配置。
    */
   business: {

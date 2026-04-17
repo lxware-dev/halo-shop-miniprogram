@@ -10,7 +10,7 @@
     "copyrightStartYear": 2026
   },
   "i18n": {
-    "defaultLocale": "en-US"
+    "defaultLocale": "zh-CN"
   },
   "halo": {
     "baseURL": "http://localhost:8090",
@@ -20,12 +20,6 @@
     "loginMethods": {
       "primary": "phoneQuick",
       "supported": ["haloAccount"]
-    }
-  },
-  "dev": {
-    "basicAuth": {
-      "username": "",
-      "password": ""
     }
   },
   "business": {

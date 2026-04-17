@@ -2,8 +2,6 @@
 
 本文说明如何在本地将项目运行起来，以便于完成小程序侧的各类设置与接口配置，并与 Halo 后台完成联调，保证小程序的基本使用。
 
-正式上线前的域名与公众平台配置，请参考 [prepare-go-live.md](./prepare-go-live.md)。
-
 ## 前提条件
 
 在开始之前，请确认已具备以下环境：
@@ -85,30 +83,28 @@ cp src/config/app.config.json src/config/app.config.local.json
 
 `src/manifest.json` 包含小程序的基础信息与各端平台配置，本地开发时通常只需关注以下字段：
 
-| 字段              | 说明                                                         |
-| ----------------- | ------------------------------------------------------------ |
-| `name`            | 应用名称                                                     |
-| `description`     | 应用描述                                                     |
-| `versionName`     | 版本名称（如 `1.0.0`），展示用                               |
-| `versionCode`     | 版本号（纯数字，如 `100`），用于版本比对                     |
-| `mp-weixin.appid` | 微信小程序 AppID，真机预览与发布时**必须**与公众平台保持一致 |
+| 字段          | 说明                                                         |
+| ------------- | ------------------------------------------------------------ |
+| `name`        | 应用名称                                                     |
+| `description` | 应用描述                                                     |
+| `versionName` | 版本名称（如 `1.0.0`），展示用                               |
+| `versionCode` | 版本号（纯数字，如 `100`），用于版本比对                     |
+| `appid`       | 微信小程序 AppID，真机预览与发布时**必须**与公众平台保持一致 |
 
 最小示例（仅列出需要修改的字段）：
 
 ```json
 {
   "name": "你的商城名称",
+  "appid": "你的小程序 appid",
   "description": "你的商城描述",
   "versionName": "1.0.0",
-  "versionCode": "100",
-  "mp-weixin": {
-    "appid": "your-appid-here"
-  }
+  "versionCode": "100"
 }
 ```
 
 > [!TIP]
-> 以上为本地开发阶段最常用的字段且需要关注的字段，当前小程序所需权限已默认配置。其他完整配置项（分包、权限、隐私信息等）请参阅 [uni-app manifest.json 官方文档](https://uniapp.dcloud.net.cn/collocation/manifest.html)。
+> 以上为本地开发阶段最常用的字段且需要关注的字段。当前小程序所需权限已默认配置。其他完整配置项（分包、权限、隐私信息等）请参阅 [uni-app manifest.json 官方文档](https://uniapp.dcloud.net.cn/collocation/manifest.html)。
 
 ### 环境变量（可选）
 
@@ -118,7 +114,7 @@ cp src/config/app.config.json src/config/app.config.local.json
 
 ```env
 # 开启后请求走 Mock，不依赖真实 Halo 后端（适合纯前端演示）
-VITE_MOCK_ENABLED=false
+VITE_MOCK_ENABLED=true
 VITE_MOCK_DELAY=400
 ```
 
@@ -136,9 +132,9 @@ pnpm dev:mp-weixin
 > [!NOTE]
 > 开发调试时，可在微信开发者工具中临时勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」，以便在未配置合法域名的情况下进行本地联调。**真机预览与正式发布前必须完成合法域名配置**，详见 [prepare-go-live.md](./prepare-go-live.md)。
 
-## 第四步：Halo 后台数据准备
+## 下一步
 
-小程序启动后，还需要在 Halo 管理端完成小程序 Banner、快捷入口、小程序支付方式等数据录入，各核心流程才能正常跑通。
+配置 Halo 商业版后台。小程序启动后，还需要在 Halo 后台完成小程序 Banner、快捷入口、小程序支付方式等数据录入，各核心流程才能正常跑通。
 
 详见 [prepare-backend.md](./prepare-backend.md)。
 
@@ -149,5 +145,4 @@ pnpm dev:mp-weixin
 - [config.md](./config.md) — 完整配置字段说明
 - [deployment.md](./deployment.md) — 构建命令与产物目录
 - [prepare-go-live.md](./prepare-go-live.md) — 上线前域名与公众平台配置
-- [payments.md](./payments.md) — 登录与支付接入
 - [faq.md](./faq.md) — 常见问题排查

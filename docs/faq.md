@@ -49,7 +49,7 @@
 **无法调起微信支付？**
 
 1. 确认订单已创建成功，且服务端返回了正确的支付参数。
-2. 核对小程序 AppID 与微信商户号的绑定关系，以及 Halo 侧支付配置（见 [payments.md](./payments.md)）。
+2. 核对小程序 AppID 与微信商户号的绑定关系，以及 Halo 侧支付配置（见 [prepare-backend.md](./prepare-backend.md)）。
 3. 使用**体验版 + 真机**复现问题，并查看服务端错误日志定位具体原因。
 
 ---
@@ -96,5 +96,5 @@
 | 上线前域名与公众平台 | [prepare-go-live.md](./prepare-go-live.md) |
 | 完整配置字段说明     | [config.md](./config.md)                   |
 | 构建命令与产物目录   | [deployment.md](./deployment.md)           |
-| 登录与支付接入       | [payments.md](./payments.md)               |
+| 配置字段与业务说明   | [config.md](./config.md)                   |
 | 提审与发布流程       | [release.md](./release.md)                 |

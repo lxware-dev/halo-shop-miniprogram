@@ -66,5 +66,5 @@
 
 - [prepare-go-live.md](./prepare-go-live.md) — 上线前域名与公众平台准备
 - [deployment.md](./deployment.md) — 构建命令与发布前准备
-- [payments.md](./payments.md) — 登录与支付接入
+- [config.md](./config.md) — 登录、法务与业务配置说明
 - [faq.md](./faq.md) — 常见问题排查

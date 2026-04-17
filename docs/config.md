@@ -4,20 +4,24 @@
 
 ## 配置文件一览
 
-| 文件                               | 作用                                                                              |
-| ---------------------------------- | --------------------------------------------------------------------------------- |
-| `src/config/app.config.json`       | **基础配置**，随仓库提交，作为团队默认值                                          |
-| `src/config/app.config.local.json` | **本地/环境覆盖**，与基础配置深度合并；**请勿将含敏感信息的该文件提交到公开仓库** |
-| `.env`（根目录）                   | Vite 环境变量，如 `VITE_MOCK_ENABLED`、`VITE_MOCK_DELAY`                          |
-| `src/pages.json`                   | uni-app 页面路由、TabBar、分包、预加载等                                          |
-| `src/manifest.json`                | 应用名称、版本号、各端 AppID 等                                                   |
-
-**合并逻辑**：Vite 插件在构建时先读取 `app.config.json`，若存在 `app.config.local.json` 则对其做**深度合并**（对象递归合并；数组与叶子节点以覆盖文件优先）。实现见 `plugins/vite-plugin-app-config.ts`。
+| 文件                               | 作用                                                                                                           |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/config/app.config.json`       | **基础配置**，随仓库提交，作为团队默认值，通常不建议直接修改此文件。**请勿将含敏感信息的该文件提交到公开仓库** |
+| `src/config/app.config.local.json` | **本地/环境覆盖**，与基础配置深度合并；                                                                        |
+| `.env`（根目录）                   | Vite 环境变量，如 `VITE_MOCK_ENABLED`、`VITE_MOCK_DELAY`                                                       |
+| `src/pages.json`                   | uni-app 页面路由、TabBar、分包、预加载等                                                                       |
+| `src/manifest.json`                | 应用名称、版本号、各端 AppID 等                                                                                |
 
 > [!IMPORTANT]
 > 配置在**构建时**被打包进产物，修改配置后需重新执行 `pnpm dev:*` 或 `pnpm build:*` 才能生效。
 
-## 最小可运行示例
+## `app.config.local.json` — 基础配置
+
+该配置文件为小程序基础配置，其配置会直接体现在小程序内部，包含接口信息、商城基础信息、登录方式配置、业务信息配置、国际化配置等。
+
+`app.config.local.json` 中的设置，将覆盖 `app.config.json` 中的默认配置，因此请务必覆盖想修改的配置，如果不填写，则会使用默认配置。
+
+### 最小可运行示例
 
 在 `src/config/app.config.local.json` 中填写以下内容即可启动（请替换为你的实际域名与文案）：
 
@@ -25,113 +29,101 @@
 {
   "app": {
     "name": "你的商城名称",
-    "nameFontSize": "48rpx",
-    "logo": "/static/logo.png",
-    "logoWidth": "160rpx",
-    "version": "1.0.0"
+    "logo": "/static/logo.png"
   },
   "halo": {
     "baseURL": "https://your-halo.example.com"
   },
   "auth": {
     "loginMethods": {
-      "primary": "haloAccount",
+      "primary": "phoneQuick",
       "supported": ["haloAccount"]
-    }
-  },
-  "business": {
-    "legalDocuments": {
-      "userAgreement": "https://your-domain.com/terms",
-      "privacyPolicy": "https://your-domain.com/privacy"
     }
   }
 }
 ```
 
-## 配置项详解
+### 配置项详解
 
-### `app` — 应用基本信息
+#### `app` — 应用基本信息
 
-| 字段                 | 说明                                               |
-| -------------------- | -------------------------------------------------- |
-| `name`               | 应用名称，显示于登录页、关于我们等处               |
-| `nameFontSize`       | 应用名称字号，建议填写 `rpx`，如 `48rpx`           |
-| `logo`               | Logo 地址，可为本地路径（`/static/...`）或完整 URL |
-| `logoWidth`          | Logo 显示宽度，建议填写 `rpx`，如 `160rpx`         |
-| `version`            | 关于我们等处展示的版本号                           |
-| `brandDescription`   | 品牌介绍文案                                       |
-| `companyName`        | 公司名称，用于关于我们页面                         |
-| `copyrightOwner`     | 版权所有者                                         |
-| `copyrightStartYear` | 版权起始年份                                       |
+| 字段                 | 说明                                                                       |
+| -------------------- | -------------------------------------------------------------------------- |
+| `name`               | 商城名称，展示于`登录页`、`关于我们`等处                                   |
+| `nameFontSize`       | 商城名称字号，建议填写 `rpx`，如 `48rpx`， 1px ≈ 2rpx                      |
+| `logo`               | Logo 地址，可为本地路径（`/static/...`）或完整 URL，通常展示在商城名称上方 |
+| `logoWidth`          | Logo 显示宽度，建议填写 `rpx`，如 `160rpx`                                 |
+| `brandDescription`   | 品牌介绍文案，展示于`关于我们`处                                           |
+| `companyName`        | 公司名称，展示于`关于我们`底部单独展示的一行公司名称。                     |
+| `copyrightOwner`     | 版权所有者                                                                 |
+| `copyrightStartYear` | 版权起始年份                                                               |
 
 > [!TIP]
 > 当你的品牌 Logo 比较扁、比较高，或左右留白较多时，优先通过 `app.logoWidth` 调整显示宽度；如果应用名称过长或品牌字重较强，可通过 `app.nameFontSize` 微调标题大小，而不必改代码。
 
-### `halo` — Halo 服务连接
+#### `halo` — Halo 服务连接
 
-| 字段      | 说明                                                                              |
-| --------- | --------------------------------------------------------------------------------- |
-| `baseURL` | Halo 服务根地址，**不要**带末尾多余路径；需与小程序 request 合法域名一致（HTTPS） |
-| `timeout` | 请求超时时间（毫秒），默认 `10000`                                                |
+| 字段      | 说明                                                                    |
+| --------- | ----------------------------------------------------------------------- |
+| `baseURL` | Halo 服务根地址，在生产环境中，需与小程序 request 合法域名一致（HTTPS） |
+| `timeout` | 请求超时时间（毫秒），默认 `10000`                                      |
 
-### `i18n` — 国际化
+#### `i18n` — 国际化
 
-| 字段            | 说明                                                         |
-| --------------- | ------------------------------------------------------------ |
-| `defaultLocale` | 默认语言，可选 `zh-CN` 或 `en-US`，与 `src/locales` 配合使用 |
+| 字段            | 说明                              |
+| --------------- | --------------------------------- |
+| `defaultLocale` | 默认语言，可选 `zh-CN` 或 `en-US` |
 
-### `auth` — 登录配置
+#### `auth` — 登录配置
 
-#### `auth.loginMethods`
+##### `auth.loginMethods`
 
 | 字段        | 说明                         |
 | ----------- | ---------------------------- |
 | `primary`   | 默认展示的登录方式           |
 | `supported` | 用户可切换的其他登录方式列表 |
 
-**支持的登录方式：**
+**当前支持的登录方式：**
 
-| 值            | 说明                                                               |
-| ------------- | ------------------------------------------------------------------ |
-| `phoneQuick`  | 微信内**手机号一键登录**，仅在微信小程序环境下可用，需用户同意协议 |
-| `haloAccount` | 账号密码登录，依赖 Halo 用户体系                                   |
-| `phoneCode`   | 手机验证码登录（取决于后台与产品实现）                             |
-| `email`       | 邮箱登录（取决于后台与产品实现）                                   |
+| 值            | 说明                                         |
+| ------------- | -------------------------------------------- |
+| `phoneQuick`  | **手机号一键登录**，此功能拥有自动注册功能。 |
+| `haloAccount` | Halo 账号密码登录                            |
 
 > [!NOTE]
-> `primary` 与 `supported` 必须与 Halo 后台实际开启的登录能力一致，否则会出现登录失败或入口异常。
+> 开启 `phoneQuick` 即手机号一键登录后，同时也会启用新用户手机号自动注册的功能，因此请务必在 Halo 后台中，启用开放注册功能，详见 [prepare-backend.md](./prepare-backend.md)。
 
-### `dev` — 开发调试
+#### `business` — 业务配置
 
-#### `dev.basicAuth`
+| 字段                    | 说明                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `currencySymbol`        | 价格货币符号，默认 `¥`                                                                                   |
+| `maxCartItems`          | 单商品购物车数量上限                                                                                     |
+| `contactServiceEnabled` | 是否展示联系客服入口，开启此功能后，需要前往小程序客服中，设置客服人员。（此功能暂时只有微信小程序支持） |
+| `legalDocuments`        | 协议与法务链接（见下方说明）                                                                             |
+| `helpCenterFaqs`        | 帮助中心 FAQ 问答列表                                                                                    |
 
-仅在**开发构建**下生效，配置 `username` 与 `password` 后可用于 Basic Auth 联调。
+##### `contactServiceEnabled`
 
-> [!WARNING]
-> 不要在生产环境依赖此方式作为正式登录方案。
-
-### `business` — 业务配置
-
-| 字段                    | 说明                         |
-| ----------------------- | ---------------------------- |
-| `currencySymbol`        | 价格货币符号，默认 `¥`       |
-| `maxCartItems`          | 单商品购物车数量上限         |
-| `contactServiceEnabled` | 是否展示联系客服入口         |
-| `legalDocuments`        | 协议与法务链接（见下方说明） |
-| `helpCenterFaqs`        | 帮助中心 FAQ 问答列表        |
+用于控制页面中是否展示“联系客服”入口。当开启此功能后，需要前往 `微信小程序后台 - 基础功能 - 客服 - 小程序客服` 中，设置对应的客服人员。
+![image-20260417181218786](/Users/lixingyong/Library/Application Support/typora-user-images/config-contact.png)
 
 #### `business.legalDocuments`
 
-| 字段               | 说明                 |
-| ------------------ | -------------------- |
-| `userAgreement`    | 用户协议链接         |
-| `privacyPolicy`    | 隐私政策链接         |
-| `paymentAgreement` | 支付说明链接（可选） |
-| `platformRules`    | 平台规则链接（可选） |
-| `qualification`    | 经营资质链接（可选） |
+| 字段               | 说明                  |
+| ------------------ | --------------------- |
+| `userAgreement`    | 用户协议链接（可选）Ï |
+| `privacyPolicy`    | 隐私政策链接（可选）  |
+| `paymentAgreement` | 支付说明链接（可选）  |
+| `platformRules`    | 平台规则链接（可选）  |
+| `qualification`    | 经营资质链接（可选）  |
 
 > [!TIP]
-> 上线前，所有法务链接建议均为 **HTTPS** 可访问地址。若使用 `<web-view>` 组件打开，还需在微信公众平台配置对应**业务域名**。
+> 上线前，所有法务链接建议均为 **HTTPS** 可访问地址，此地址还需在微信公众平台配置对应**业务域名**。
+
+#### `business.helpCenterFaqs`
+
+用于配置帮助中心中的常见问题与答案内容，适合补充配送、售后、支付说明等固定文案。
 
 ## Mock 与环境变量
 
@@ -168,6 +160,7 @@ VITE_MOCK_DELAY=400
 ## 相关文档
 
 - [prepare-local.md](./prepare-local.md) — 本地环境搭建
+- [prepare-backend.md](./prepare-backend.md) — Halo 后台数据准备
+- [prepare-go-live.md](./prepare-go-live.md) — 上线前域名、支付与真机验收
 - [deployment.md](./deployment.md) — 构建命令与产物目录
-- [payments.md](./payments.md) — 登录与支付配置详解
 - [faq.md](./faq.md) — 常见问题排查
