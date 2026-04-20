@@ -93,6 +93,10 @@
 > [!NOTE]
 > 开启 `phoneQuick` 即手机号一键登录后，同时也会启用新用户手机号自动注册的功能，因此请务必在 Halo 后台中，启用开放注册功能，详见 [3.prepare-backend.md](./3.prepare-backend.md)。
 
+> [!warning]
+>
+> 只有商户小程序才可以使用手机号快速验证组件，若当前小程序还未升级到商户小程序可以仅使用 `haloAccount` 进行登录
+
 #### `business` — 业务配置
 
 | 字段                    | 说明                                                                                                     |
