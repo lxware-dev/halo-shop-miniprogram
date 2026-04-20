@@ -109,7 +109,7 @@
 
 设置后，用户通过 “联系客服” 功能，可直接通过微信与客服联系，无需进行第三方对接。
 
-![image-20260417181218786](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/config-contact.png)
+![image-20260417181218786](./images/config-contact.png)
 
 `business.legalDocuments`
 
@@ -124,7 +124,7 @@
 > [!TIP]
 > 上线前，所有法务链接建议均为 **HTTPS** 可访问地址，此地址还需在微信公众平台配置对应**业务域名**。
 
-![image-20260420103549419](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/config-webview-url.png)
+![image-20260420103549419](./images/config-webview-url.png)
 
 ##### `business.helpCenterFaqs`
 
