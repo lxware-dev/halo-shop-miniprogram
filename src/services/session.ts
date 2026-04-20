@@ -3,7 +3,7 @@ import { getPlatform } from '@/helpers/platform';
 import { useUserStore } from '@/store';
 import type { LoginResult } from '@/types/auth';
 import { isTimeExpired } from '@/utils/date';
-import { buildQuery, base64Encode } from '@/utils/encode';
+import { buildQuery } from '@/utils/encode';
 
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const TRAILING_SLASH_PATTERN = /\/$/;
@@ -62,24 +62,7 @@ export function applyLoginSession(result: LoginResult) {
   userStore.setExpiresAt(result.expiresAt ?? null);
 }
 
-export function applyBasicAuthCredentialIfConfigured() {
-  const userStore = useUserStore();
-  const { basicAuth } = useAppConfig().dev;
-  if (!import.meta.env.DEV || !basicAuth?.username || !basicAuth?.password) {
-    return false;
-  }
-
-  const encoded = base64Encode(`${basicAuth.username}:${basicAuth.password}`);
-  userStore.setCredential(`Basic ${encoded}`);
-  userStore.setExpiresAt(null);
-  return true;
-}
-
 export async function ensureSessionInitialized(forceRefresh = false) {
-  if (applyBasicAuthCredentialIfConfigured()) {
-    return;
-  }
-
   if (!forceRefresh && hasValidLocalToken()) {
     return;
   }

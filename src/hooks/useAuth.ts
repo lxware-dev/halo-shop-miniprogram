@@ -3,7 +3,6 @@ import { isAnonymousUser } from '@/store/modules/user';
 import { userApi } from '@/api';
 import { openLoginEntry } from '@/helpers/auth';
 import {
-  applyBasicAuthCredentialIfConfigured,
   applyLoginSession,
   ensureSessionInitialized,
   refreshSession as refreshSessionCredential,
@@ -26,17 +25,12 @@ export function useAuth() {
 
   /**
    * Initialize the token when the app starts.
-   * - If basicAuth debug mode is configured, write the credential directly
    * - If the local token has not expired, reuse it directly
    * - Otherwise call uni.login to exchange for a new token
    *
    * Note: init does not infer login state or update hasLogin automatically.
    */
   async function init() {
-    if (applyBasicAuthCredentialIfConfigured()) {
-      return;
-    }
-
     try {
       await ensureSessionInitialized();
     } catch {

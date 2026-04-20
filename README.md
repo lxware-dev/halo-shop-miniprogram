@@ -2,7 +2,7 @@
 
 基于 [Halo 商城版](https://www.lxware.cn/halo) 的电商小程序，使用 Vue 3 + uni-app 构建，支持微信小程序。
 
-[本地开发指南](./docs/prepare-local.md) · [配置说明](./docs/config.md)
+[本地开发指南](./docs/2.prepare-local.md) · [配置说明](./docs/config.md)
 
 ## 许可证
 
