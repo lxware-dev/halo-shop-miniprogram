@@ -17,56 +17,49 @@
 
 - 真机会强制校验域名与 TLS，在开发者工具中关闭「不校验合法域名」后再测，确认真机是否同样失败。
 - 确认手机网络未拦截 API 域名（可尝试切换 Wi-Fi / 流量）。
-- 参考 [prepare-go-live.md](./prepare-go-live.md) 完成合法域名配置后再测试。
+- 参考 [prepare-go-live.md](./4.prepare-go-live.md) 完成合法域名配置后再测试。
 
 ## 页面与数据
 
 **首页 / 分类 / 商品列表为空？**
 
 - 确认 Halo 后台已录入分类、商品、首页素材等数据。
-- 确认当前 `baseURL` 指向有数据的环境（不要把开发环境指向生产后台，反之亦然）。
+- 确认当前 `baseURL` 指向有数据的环境。
 - 检查 `VITE_MOCK_ENABLED` 是否为 `true`，Mock 开启时不会请求真实后端（见 [config.md](./config.md)）。
 
 ---
 
-**图片不显示？**
+**首页轮播图 / 快捷入口不存在？**
 
-- 若为外链图片，检查该图片域名是否已在微信公众平台配置 **downloadFile** 合法域名。
-- 确认图片 URL 可正常访问，无 403 / 跨域等问题。
-- 本地静态资源请确认文件已随包发布且路径正确。
+- 参考 [Halo 后台配置 ](./3.prepare-backend.md)配置 横幅轮播图 与 快捷入口。
 
 ## 登录
 
 **没有登录按钮，或一键登录点击无效？**
 
 - 检查 `auth.loginMethods` 配置是否与预期一致（见 [config.md](./config.md)）。
-- `phoneQuick`（手机号一键登录）只在**微信小程序**中可用，需在真机或开发者工具中测试，不支持 H5 环境。
-- 确认用户已同意协议（视页面逻辑而定）。
-- 确认 Halo 后台已开启对应登录 / 绑定能力。
+- 确定在 `auth.loginMethods` 已至少配置一个主要的登录方式。
 
 ## 支付
 
 **无法调起微信支付？**
 
 1. 确认订单已创建成功，且服务端返回了正确的支付参数。
-2. 核对小程序 AppID 与微信商户号的绑定关系，以及 Halo 侧支付配置（见 [prepare-backend.md](./prepare-backend.md)）。
-3. 使用**体验版 + 真机**复现问题，并查看服务端错误日志定位具体原因。
+2. 核对小程序 AppID 与微信商户号的绑定关系，以及 Halo 侧支付配置（见 [prepare-backend.md](./3.prepare-backend.md)）。
 
 ---
 
 **支付成功，但订单状态未更新？**
 
 - 通常是微信支付的异步通知（回调）未正常到达 Halo。
-- 检查 Halo 配置的回调 URL 是否可从微信服务器访问，以及是否被防火墙拦截。
-- 在微信商户平台查看通知日志，确认回调是否发送成功。
+- 检查 Halo 配置的 `外部访问地址` 是否为本地路径，如果是则需要修改为可被外部访问的 `Https` 地址。
 
 ## 配置不生效
 
 **修改了 `app.config.local.json`，但没有任何变化？**
 
-- 配置在**构建时注入**，修改后需**重启** dev 或**重新 build** 才能生效。
+- 配置在**构建时注入**，可能修改后需**重启** dev 或**重新 build** 才能生效。
 - 确认文件路径为 `src/config/app.config.local.json`，且文件内容为合法 JSON（无语法错误）。
-- 确认修改的是 `app.config.local.json` 而非 `app.config.json`（两者均有效，但 local 文件优先）。
 
 ## 构建与工具
 
@@ -86,15 +79,3 @@
 - 确认 Node.js 版本为当前 LTS 版本：`node -v`。
 - 确认 pnpm 已安装：`pnpm -v`。
 - 尝试清除缓存后重新安装：`pnpm store prune && pnpm install`。
-
-## 文档索引
-
-| 主题                 | 文档                                       |
-| -------------------- | ------------------------------------------ |
-| 文档总览与阅读指引   | [prepare.md](./prepare.md)                 |
-| 本地环境搭建与联调   | [prepare-local.md](./prepare-local.md)     |
-| 上线前域名与公众平台 | [prepare-go-live.md](./prepare-go-live.md) |
-| 完整配置字段说明     | [config.md](./config.md)                   |
-| 构建命令与产物目录   | [deployment.md](./deployment.md)           |
-| 配置字段与业务说明   | [config.md](./config.md)                   |
-| 提审与发布流程       | [release.md](./release.md)                 |

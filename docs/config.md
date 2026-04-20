@@ -91,7 +91,7 @@
 | `haloAccount` | Halo 账号密码登录                            |
 
 > [!NOTE]
-> 开启 `phoneQuick` 即手机号一键登录后，同时也会启用新用户手机号自动注册的功能，因此请务必在 Halo 后台中，启用开放注册功能，详见 [prepare-backend.md](./prepare-backend.md)。
+> 开启 `phoneQuick` 即手机号一键登录后，同时也会启用新用户手机号自动注册的功能，因此请务必在 Halo 后台中，启用开放注册功能，详见 [3.prepare-backend.md](./3.prepare-backend.md)。
 
 #### `business` — 业务配置
 
@@ -103,25 +103,30 @@
 | `legalDocuments`        | 协议与法务链接（见下方说明）                                                                             |
 | `helpCenterFaqs`        | 帮助中心 FAQ 问答列表                                                                                    |
 
-##### `contactServiceEnabled`
+##### `business.contactServiceEnabled`
 
 用于控制页面中是否展示“联系客服”入口。当开启此功能后，需要前往 `微信小程序后台 - 基础功能 - 客服 - 小程序客服` 中，设置对应的客服人员。
-![image-20260417181218786](/Users/lixingyong/Library/Application Support/typora-user-images/config-contact.png)
 
-#### `business.legalDocuments`
+设置后，用户通过 “联系客服” 功能，可直接通过微信与客服联系，无需进行第三方对接。
 
-| 字段               | 说明                  |
-| ------------------ | --------------------- |
-| `userAgreement`    | 用户协议链接（可选）Ï |
-| `privacyPolicy`    | 隐私政策链接（可选）  |
-| `paymentAgreement` | 支付说明链接（可选）  |
-| `platformRules`    | 平台规则链接（可选）  |
-| `qualification`    | 经营资质链接（可选）  |
+![image-20260417181218786](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/config-contact.png)
+
+`business.legalDocuments`
+
+| 字段               | 说明                 |
+| ------------------ | -------------------- |
+| `userAgreement`    | 用户协议链接（可选） |
+| `privacyPolicy`    | 隐私政策链接（可选） |
+| `paymentAgreement` | 支付说明链接（可选） |
+| `platformRules`    | 平台规则链接（可选） |
+| `qualification`    | 经营资质链接（可选） |
 
 > [!TIP]
 > 上线前，所有法务链接建议均为 **HTTPS** 可访问地址，此地址还需在微信公众平台配置对应**业务域名**。
 
-#### `business.helpCenterFaqs`
+![image-20260420103549419](/Users/lixingyong/workspace/halo-shop-miniprogram/docs/images/config-webview-url.png)
+
+##### `business.helpCenterFaqs`
 
 用于配置帮助中心中的常见问题与答案内容，适合补充配送、售后、支付说明等固定文案。
 
@@ -141,26 +146,51 @@ VITE_MOCK_DELAY=400
 
 如需区分多个环境，可扩展为 `.env.development`、`.env.production`（需与 Vite 约定一致）。
 
-## `pages.json` 与 `manifest.json`
+## `pages.json` — 页面路由与导航配置
 
-- **`src/pages.json`**：新增/调整页面、TabBar、分包时修改。错误配置会导致页面无法打开或包体过大。
-- **`src/manifest.json`**：小程序 **AppID**、应用名称、版本号等。发布前请与微信公众平台信息保持一致。
+当你需要新增页面、调整首页、修改底部导航、拆分分包，或控制页面标题与下拉刷新时，可以修改当前内容。
 
-## 常见配置错误
+> [!warning]
+>
+> 如非开发需求，通常不太建议修改 `pages.json`。
 
-| 现象                 | 可能原因                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| 请求失败 / 网络错误  | `baseURL` 错误、未配置合法域名、非 HTTPS、证书问题                                   |
-| 登录无入口或行为异常 | `loginMethods` 与后台能力不一致；`phoneQuick` 未在微信环境测试                       |
-| 协议页打不开         | `legalDocuments` 链接错误，或域名未加入业务域名，或非 HTTPS                          |
-| 修改配置不生效       | 需重新执行 `pnpm dev:*` / `pnpm build:*`；确认改的是已合并的 `app.config.local.json` |
+### 常见修改项
 
-更多排错见 [faq.md](./faq.md)。
+此处仅列出一些常见的配置项，详细配置请参阅 <https://uniapp.dcloud.net.cn/collocation/pages>
 
-## 相关文档
+| 场景         | 常改位置                        | 说明                                 |
+| ------------ | ------------------------------- | ------------------------------------ |
+| 新增页面     | `pages` / `subPackages[].pages` | 页面文件创建后，必须在这里注册       |
+| 修改页面标题 | `style.navigationBarTitleText`  | 控制原生导航栏标题文字               |
+| 拆分分包     | `subPackages`                   | 将低频页面拆到分包，减少主包体积     |
+| 配置预加载   | `preloadRule`                   | 预加载某些分包，优化进入后续页面速度 |
 
-- [prepare-local.md](./prepare-local.md) — 本地环境搭建
-- [prepare-backend.md](./prepare-backend.md) — Halo 后台数据准备
-- [prepare-go-live.md](./prepare-go-live.md) — 上线前域名、支付与真机验收
-- [deployment.md](./deployment.md) — 构建命令与产物目录
-- [faq.md](./faq.md) — 常见问题排查
+## `manifest.json` — 应用信息与平台配置
+
+当你需要填写小程序 AppID、修改应用名称、更新版本号、声明平台权限，或调整特定平台能力时，可修改此配置文件。
+
+> [!warning]
+>
+> 通常只需要修改一些小程序信息相关的基础配置项，权限配置等已默认配置完成。
+
+### 常见修改项
+
+| 字段          | 说明                   |
+| ------------- | ---------------------- |
+| `name`        | 应用名称               |
+| `description` | 应用描述               |
+| `versionName` | 版本名称，例如 `1.0.0` |
+| `versionCode` | 版本号，通常为递增数字 |
+
+### `微信小程序配置`
+
+| 字段                             | 说明                                                       |
+| -------------------------------- | ---------------------------------------------------------- |
+| `mp-weixin.appid`                | 微信小程序 AppID，发布前必须替换为你自己的                 |
+| `mp-weixin.setting.urlCheck`     | 开发阶段可用于关闭合法域名校验，正式发布前应按平台要求检查 |
+| `mp-weixin.requiredPrivateInfos` | 需要声明使用的微信私有接口能力                             |
+
+> [!IMPORTANT]
+> `mp-weixin.appid` 需与微信公众平台中的小程序主体保持一致，否则真机预览、上传、发布流程会受影响。
+
+有关 `manifest.json` 的详细配置文件，请参阅 [manifest.json 应用配置](https://uniapp.dcloud.net.cn/collocation/manifest.html#manifest-json-%E5%BA%94%E7%94%A8%E9%85%8D%E7%BD%AE)。
