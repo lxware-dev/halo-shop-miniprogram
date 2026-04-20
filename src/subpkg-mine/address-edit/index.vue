@@ -56,7 +56,6 @@ const form = ref<UserAddressUpsertRequest>({
   cityCode: '',
   districtCode: '',
   streetAddress: '',
-  postalCode: '',
   isDefault: false,
 });
 
@@ -187,9 +186,6 @@ async function applyImportOptions() {
   if (options.importStreet) {
     form.value.streetAddress = decodeURIComponent(options.importStreet);
   }
-  if (options.importPostalCode) {
-    form.value.postalCode = decodeURIComponent(options.importPostalCode);
-  }
   if (options.importProvince && options.importCity && options.importDistrict) {
     await prefillRegionByName(
       decodeURIComponent(options.importProvince),
@@ -304,7 +300,6 @@ async function loadAddressDetail() {
         cityCode: data.cityCode ?? '',
         districtCode: data.districtCode ?? '',
         streetAddress: data.streetAddress ?? '',
-        postalCode: data.postalCode ?? '',
         isDefault: data.isDefault ?? false,
       };
       regionNames.value = {
@@ -333,7 +328,6 @@ async function parseAddressText() {
   const hasMatchedField = [
     parsed.receiverName,
     parsed.contactPhone,
-    parsed.postalCode,
     parsed.streetAddress,
     parsed.province,
     parsed.city,
@@ -351,9 +345,6 @@ async function parseAddressText() {
   }
   if (parsed.contactPhone) {
     form.value.contactPhone = parsed.contactPhone;
-  }
-  if (parsed.postalCode) {
-    form.value.postalCode = parsed.postalCode;
   }
   if (parsed.streetAddress) {
     form.value.streetAddress = parsed.streetAddress;
@@ -385,10 +376,6 @@ function validateForm(): boolean {
   }
   if (!form.value.streetAddress.trim()) {
     uni.showToast({ title: t('address.streetRequired'), icon: 'none' });
-    return false;
-  }
-  if (!form.value.postalCode?.trim()) {
-    uni.showToast({ title: t('address.postalCodeRequired'), icon: 'none' });
     return false;
   }
   return true;
@@ -507,20 +494,6 @@ const fullName = computed({
               placeholder-style="color: #94a3b8"
               :maxlength="200"
               auto-height
-            />
-          </view>
-
-          <view class="flex items-start p-4 border-b border-solid border-slate-50">
-            <view class="shrink-0 pt-0.5 w-24">
-              <text class="text-slate-700 text-base">{{ t('address.postalCode') }}</text>
-            </view>
-            <input
-              v-model="form.postalCode"
-              class="flex-1 text-base text-slate-950 min-w-0"
-              :placeholder="t('address.postalCodePlaceholder')"
-              placeholder-style="color: #94a3b8"
-              type="number"
-              :maxlength="6"
             />
           </view>
         </view>

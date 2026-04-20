@@ -40,7 +40,6 @@ function generateInlineUserAddress(): UserAddressUpsertRequest {
     cityCode: '440100',
     districtCode: '440106',
     streetAddress: `${faker.location.street()}${faker.number.int({ min: 1, max: 999 })}号`,
-    postalCode: faker.string.numeric(6),
   };
 }
 

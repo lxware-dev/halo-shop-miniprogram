@@ -88,7 +88,6 @@ function generateAddress(id: number): UserAddressResponse {
     district: area.name,
     districtCode: area.code,
     streetAddress: `${faker.location.street()}${faker.number.int({ min: 1, max: 999 })}号${faker.number.int({ min: 1, max: 20 })}楼`,
-    postalCode: faker.string.numeric(6),
     isDefault: id === 1,
     createdAt: faker.date.recent({ days: 90 }).toISOString(),
     updatedAt: faker.date.recent({ days: 30 }).toISOString(),

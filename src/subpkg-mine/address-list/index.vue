@@ -88,7 +88,6 @@ function importFromPlatform() {
         importCity: res.cityName,
         importDistrict: res.countyName,
         importStreet: street,
-        importPostalCode: res.postalCode,
       });
       uni.navigateTo({ url: `/subpkg-mine/address-edit/index?${query}` });
     },
@@ -133,7 +132,6 @@ function buildAddressUpsertPayload(
     cityCode: address.cityCode ?? '',
     districtCode: address.districtCode ?? '',
     streetAddress: address.streetAddress ?? '',
-    postalCode: address.postalCode ?? '',
     isDefault,
   };
 }

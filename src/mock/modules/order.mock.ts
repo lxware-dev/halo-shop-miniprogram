@@ -28,7 +28,6 @@ function generateShippingAddress(): OrderShippingAddress {
     district: faker.helpers.arrayElement(['天河区', '福田区', '西湖区', '玄武区', '姑苏区']),
     districtCode: faker.string.numeric(6),
     streetAddress: `${faker.location.street()}${faker.number.int({ min: 1, max: 999 })}号`,
-    postalCode: faker.string.numeric(6),
   };
 }
 

@@ -1,7 +1,5 @@
 const MOBILE_PHONE_REG = /(?:\+?86[-\s]?)?(1[3-9]\d{9})(?!\d)/;
 const LANDLINE_PHONE_REG = /(0\d{2,3}[-\s]?\d{7,8})(?!\d)/;
-const LABELLED_POSTAL_CODE_REG = /(?:邮编|邮政编码)\D{0,4}(\d{6})(?!\d)/;
-const PLAIN_POSTAL_CODE_REG = /(?:^|[\s,，、:：])(\d{6})(?=$|[\s,，、])/;
 const SEPARATOR_REG = /[\n\r\t,，、;；|]+/g;
 const EXTRA_SPACE_REG = /\s+/g;
 const NBSP_REG = /\u00A0/g;
@@ -10,7 +8,7 @@ const COLON_REG = /[:：]/g;
 const COMMA_REG = /[，、,]/g;
 const DIGIT_REG = /\d/;
 const ADDRESS_FIELD_LABEL_REG =
-  /(?:收货地址|详细地址|所在地区|地址信息|收件地址|联系人|收货人|收件人|姓名|电话|联系电话|手机号码|手机号|手机|邮编|邮政编码|地区)[:：]*/g;
+  /(?:收货地址|详细地址|所在地区|地址信息|收件地址|联系人|收货人|收件人|姓名|电话|联系电话|手机号码|手机号|手机|地区)[:：]*/g;
 const ADDRESS_NOISE_REG =
   /(?:默认地址|中国|联系电话同收货人|收件信息|收货信息|地址详情|具体地址|门牌号)[:：]*/g;
 const ADDRESS_DETAIL_KEYWORD_REG = /[省市区县旗镇乡路街巷弄号栋幢座楼层室]|单元/;
@@ -94,7 +92,6 @@ export interface ReceiverNameParts {
 
 export interface SmartAddressParseResult extends ReceiverNameParts {
   contactPhone: string;
-  postalCode: string;
   province: string;
   city: string;
   district: string;
@@ -152,26 +149,6 @@ function extractPhone(text: string): ExtractedValue | null {
   return {
     raw: landlineMatch[0],
     value: landlineMatch[1].replace(EXTRA_SPACE_REG, ''),
-  };
-}
-
-function extractPostalCode(text: string): ExtractedValue | null {
-  const labelledMatch = text.match(LABELLED_POSTAL_CODE_REG);
-  if (labelledMatch) {
-    return {
-      raw: labelledMatch[0],
-      value: labelledMatch[1],
-    };
-  }
-
-  const plainMatch = text.match(PLAIN_POSTAL_CODE_REG);
-  if (!plainMatch) {
-    return null;
-  }
-
-  return {
-    raw: plainMatch[0],
-    value: plainMatch[1],
   };
 }
 
@@ -289,7 +266,6 @@ export function parseSmartAddressText(text: string): SmartAddressParseResult {
       lastName: '',
       firstName: '',
       contactPhone: '',
-      postalCode: '',
       province: '',
       city: '',
       district: '',
@@ -302,11 +278,6 @@ export function parseSmartAddressText(text: string): SmartAddressParseResult {
   const phone = extractPhone(workingText);
   if (phone) {
     workingText = removeFirstOccurrence(workingText, phone.raw);
-  }
-
-  const postalCode = extractPostalCode(workingText);
-  if (postalCode) {
-    workingText = removeFirstOccurrence(workingText, postalCode.raw);
   }
 
   const region = extractRegion(workingText);
@@ -325,7 +296,6 @@ export function parseSmartAddressText(text: string): SmartAddressParseResult {
   return {
     ...nameParts,
     contactPhone: phone?.value ?? '',
-    postalCode: postalCode?.value ?? '',
     province: region?.province ?? '',
     city: region?.city ?? '',
     district: region?.district ?? '',

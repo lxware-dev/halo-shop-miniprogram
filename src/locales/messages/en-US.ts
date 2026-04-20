@@ -297,7 +297,6 @@ const enUS = {
   'address.phoneInvalid': 'Invalid mobile or landline number format',
   'address.regionRequired': 'Please select your region',
   'address.streetRequired': 'Please enter the street address',
-  'address.postalCodeRequired': 'Please enter the postal code',
   'address.saveSuccess': 'Saved successfully',
   'address.saveFailed': 'Save failed. Please try again.',
   'address.saving': 'Saving...',
@@ -311,8 +310,6 @@ const enUS = {
   'address.regionPickerTitle': 'Select region',
   'address.street': 'Street address',
   'address.streetPlaceholder': 'Street, building, room number, etc.',
-  'address.postalCode': 'Postal code',
-  'address.postalCodePlaceholder': 'Enter the postal code',
   'address.defaultBadge': 'Default',
   'address.default': 'Set as default address',
   'address.pasteHint':

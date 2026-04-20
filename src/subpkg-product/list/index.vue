@@ -71,7 +71,7 @@ onLoad((options) => {
   void loadPageData();
 });
 
-type SortType = 'default' | 'sales' | 'price_asc' | 'price_desc';
+type SortType = 'default' | 'price_asc' | 'price_desc';
 const sortType = ref<SortType>('default');
 
 function toNumberOrUndefined(value: string | number | undefined) {
@@ -97,8 +97,6 @@ function selectSort(type: SortType) {
 
 const sortParam = computed(() => {
   switch (sortType.value) {
-    case 'sales':
-      return ['salesCount,desc'];
     case 'price_asc':
       return ['minPrice,asc'];
     case 'price_desc':
@@ -263,19 +261,6 @@ const { refresherTriggered, onRefresherRefresh, resetRefresher } =
             :class="sortType === 'default' ? 'text-brand' : 'text-slate-500'"
           >
             {{ $t('list.sort.default') }}
-          </text>
-        </view>
-
-        <view
-          class="flex flex-1 items-center justify-center h-full"
-          :class="sortType === 'sales' ? 'border-0 border-b border-solid border-brand' : ''"
-          @tap="selectSort('sales')"
-        >
-          <text
-            class="text-sm font-medium"
-            :class="sortType === 'sales' ? 'text-brand' : 'text-slate-500'"
-          >
-            {{ $t('list.sort.sales') }}
           </text>
         </view>
 
