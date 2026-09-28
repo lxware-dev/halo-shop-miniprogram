@@ -4,6 +4,7 @@ import { onLoad } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
+import VirtualFulfillmentSection from '@/components/business/VirtualFulfillmentSection.vue';
 import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
@@ -19,32 +20,47 @@ import {
   getSpecText,
   requiresShipping,
 } from '@/helpers/order';
-import type { OrderResponse, OrderItemResponse, FulfillmentUcResponse } from '@halo-dev/api-client';
+import type {
+  OrderResponse,
+  OrderItemResponse,
+  FulfillmentUcResponse,
+  CustomerDigitalResourceUcResponse,
+} from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { openPurchasedDigitalResource } from '@/helpers/digital-resource';
 
 const orderCode = ref('');
 const { t } = useI18n();
 const {
-  data: detailData,
+  data: orderData,
   loading,
   error: loadErrorRaw,
   run: runOrderDetail,
-} = useAsyncQuery<
-  { orderData: OrderResponse; fulfillData: FulfillmentUcResponse[] },
-  { orderCode: string }
->(
-  async (params) => {
-    const [orderData, fulfillData] = await Promise.all([
-      sendRequest(orderApi.getOrder(params.orderCode)),
-      sendRequest(orderApi.getOrderFulfillments(params.orderCode)).catch(() => []),
-    ]);
-    return { orderData, fulfillData: fulfillData as FulfillmentUcResponse[] };
-  },
+} = useAsyncQuery<OrderResponse, { orderCode: string }>(
+  (params) => sendRequest(orderApi.getOrder(params.orderCode)),
   { immediate: false },
 );
-const order = computed(() => detailData.value?.orderData ?? null);
-const fulfillments = computed(() => detailData.value?.fulfillData ?? []);
+const {
+  data: fulfillmentData,
+  loading: fulfillmentsLoading,
+  error: fulfillmentErrorRaw,
+  run: runFulfillments,
+} = useAsyncQuery<FulfillmentUcResponse[], { orderCode: string }>(
+  (params) => sendRequest(orderApi.getOrderFulfillments(params.orderCode)),
+  { immediate: false },
+);
+const order = computed(() => orderData.value);
+const fulfillments = computed(() => fulfillmentData.value ?? []);
 const loadError = computed(() => !!loadErrorRaw.value);
+const fulfillmentError = computed(() => !!fulfillmentErrorRaw.value);
+
+async function loadOrderData() {
+  if (!orderCode.value) {
+    return;
+  }
+  await runOrderDetail({ orderCode: orderCode.value });
+  void runFulfillments({ orderCode: orderCode.value }).catch(() => {});
+}
 
 onLoad(async (options) => {
   if (!guardCurrentPageAccess()) {
@@ -53,7 +69,7 @@ onLoad(async (options) => {
   if (options?.orderCode) {
     orderCode.value = options.orderCode;
     try {
-      await runOrderDetail({ orderCode: orderCode.value });
+      await loadOrderData();
     } catch {
       // ignore
     }
@@ -61,10 +77,13 @@ onLoad(async (options) => {
 });
 
 function retryLoadData() {
-  if (!orderCode.value) {
-    return;
+  void loadOrderData().catch(() => {});
+}
+
+function retryFulfillments() {
+  if (orderCode.value) {
+    void runFulfillments({ orderCode: orderCode.value }).catch(() => {});
   }
-  runOrderDetail({ orderCode: orderCode.value });
 }
 
 const statusInfo = computed(() => {
@@ -76,23 +95,24 @@ const statusInfo = computed(() => {
 });
 
 const orderRequiresShipping = computed(() => !!order.value && requiresShipping(order.value));
+const showVirtualFulfillment = computed(
+  () =>
+    !!order.value?.items?.some((item) => item.productVariantSnapshot?.shippingRequired === false) ||
+    fulfillments.value.some((fulfillment) => fulfillment.type === 'VIRTUAL'),
+);
 
-/**
- * Latest logistics update
- */
-const latestLogistics = computed(() => {
-  if (!orderRequiresShipping.value || !fulfillments.value.length) {
-    return null;
+const shippingPackages = computed(() => {
+  if (!orderRequiresShipping.value) {
+    return [];
   }
-  const f = fulfillments.value[0];
-  const label = f.labels?.[0];
-  if (!label?.carrier && !label?.trackingNumber) {
-    return null;
-  }
-  return {
-    carrier: label?.carrier ?? t('order.status.express'),
-    trackingNumber: label?.trackingNumber ?? '',
-  };
+  return fulfillments.value
+    .filter((fulfillment) => fulfillment.type === 'SHIPPING')
+    .flatMap((fulfillment) => fulfillment.labels ?? [])
+    .filter((label) => !!label.carrier || !!label.trackingNumber)
+    .map((label) => ({
+      carrier: label.carrier ?? t('order.status.express'),
+      trackingNumber: label.trackingNumber ?? '',
+    }));
 });
 
 /**
@@ -155,7 +175,7 @@ async function onConfirmReceive() {
         try {
           await sendRequest(orderApi.markAsReceived(orderCode.value));
           uni.showToast({ title: t('order.confirmReceiveSuccess'), icon: 'success' });
-          await runOrderDetail({ orderCode: orderCode.value });
+          await loadOrderData();
         } catch {
           uni.showToast({ title: t('order.actionFailed'), icon: 'none' });
         }
@@ -225,6 +245,33 @@ function onCopyOrderCode() {
     success: () => uni.showToast({ title: t('order.copied'), icon: 'success' }),
   });
 }
+
+function onCopyDeliveryContent(value: string) {
+  uni.setClipboardData({
+    data: value,
+    success: () => uni.showToast({ title: t('order.copied'), icon: 'success' }),
+  });
+}
+
+const openingResource = ref(false);
+
+async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse) {
+  if (import.meta.env.VITE_MOCK_ENABLED === 'true') {
+    uni.showToast({ title: t('order.virtual.mockDownloadUnavailable'), icon: 'none' });
+    return;
+  }
+  if (openingResource.value) {
+    return;
+  }
+  openingResource.value = true;
+  try {
+    await openPurchasedDigitalResource(resource);
+  } catch {
+    uni.showToast({ title: t('order.virtual.downloadFailed'), icon: 'none' });
+  } finally {
+    openingResource.value = false;
+  }
+}
 </script>
 
 <template>
@@ -266,31 +313,34 @@ function onCopyOrderCode() {
     </view>
 
     <view
-      v-if="latestLogistics"
+      v-if="shippingPackages.length"
       class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5"
     >
-      <view
-        class="flex gap-4 items-start pb-4"
-        style="border-bottom: 1rpx solid rgba(238, 43, 43, 0.06)"
-      >
-        <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
-          <TIcon name="secured" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
+      <view class="flex flex-col gap-3" :class="shippingAddr ? 'pb-4' : ''">
+        <view
+          v-for="(shippingPackage, index) in shippingPackages"
+          :key="index"
+          class="flex gap-4 items-start"
+        >
+          <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
+            <TIcon name="secured" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
+          </view>
+          <view class="flex-1 min-w-0 flex flex-col gap-1">
+            <text class="text-xs text-slate-500">
+              {{ $t('order.shippingPackageNumber', { number: index + 1 }) }}
+            </text>
+            <text class="text-sm text-slate-950 font-medium leading-snug break-all">
+              {{ shippingPackage.carrier }}：{{ shippingPackage.trackingNumber }}
+            </text>
+          </view>
         </view>
-        <view class="flex-1 min-w-0 flex flex-col gap-1">
-          <text class="text-sm text-slate-950 font-medium leading-snug">
-            {{
-              $t('order.shippingProgress', {
-                carrier: latestLogistics.carrier,
-                trackingNumber: latestLogistics.trackingNumber,
-              })
-            }}
-          </text>
-          <text class="text-xs text-slate-500">{{ formatDate(order.updatedAt) }}</text>
-        </view>
-        <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: ICON_COLOR.muted }" />
       </view>
 
-      <view v-if="shippingAddr" class="flex gap-4 items-start pt-4">
+      <view
+        v-if="shippingAddr"
+        class="flex gap-4 items-start pt-4"
+        style="border-top: 1rpx solid rgba(238, 43, 43, 0.06)"
+      >
         <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
           <TIcon name="location" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
         </view>
@@ -325,6 +375,17 @@ function onCopyOrderCode() {
         </view>
       </view>
     </view>
+
+    <VirtualFulfillmentSection
+      v-if="showVirtualFulfillment"
+      :paid="order.paymentStatus === 'PAID'"
+      :fulfillments="fulfillments"
+      :loading="fulfillmentsLoading"
+      :error="fulfillmentError"
+      @retry="retryFulfillments"
+      @copy="onCopyDeliveryContent"
+      @download="onOpenDigitalResource"
+    />
 
     <view
       class="mx-3 mt-3 bg-white rounded-2 overflow-hidden shadow-card border border-solid border-brand/5"

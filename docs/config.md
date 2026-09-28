@@ -149,6 +149,7 @@ VITE_MOCK_DELAY=400
 | `VITE_MOCK_DELAY`   | Mock 响应延迟（毫秒），用于模拟网络延迟                                                                    |
 
 Mock 请求使用 `mock.invalid` 作为地址标识，不访问配置的 Halo 地址。Mock 图片直接使用占位图地址，不经过 Halo 缩略图接口；占位图仍可能访问 `picsum.photos`。
+订单列表示例包含已交付、交付中、未付款的虚拟订单和分包裹发货订单。Mock 中可查看交付内容；数字资源的文件下载需要真实 Halo Pro 服务与已付款订单，Mock 模式下不会发起下载请求。
 
 如需区分多个环境，可扩展为 `.env.development`、`.env.production`（需与 Vite 约定一致）。
 
