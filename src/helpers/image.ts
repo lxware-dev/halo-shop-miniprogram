@@ -24,7 +24,8 @@ export function formatImageUrlWithThumbnail(
 }
 
 /**
- * Format image URL: relative paths are prefixed with baseURL automatically, while absolute paths are returned as-is
+ * Format image URL: relative paths use the Halo baseURL outside Mock mode;
+ * Mock mode keeps them local, and absolute paths are returned as-is.
  */
 export function formatImageUrl(url: string | null | undefined): string {
   if (!url) {
@@ -32,6 +33,10 @@ export function formatImageUrl(url: string | null | undefined): string {
   }
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
     return url;
+  }
+  if (import.meta.env.VITE_MOCK_ENABLED === 'true') {
+    // Mock images must not resolve against the configured Halo server.
+    return url.startsWith('/') ? url : `/${url}`;
   }
   const { halo } = useAppConfig();
   const base = halo.baseURL.replace(BASE_URL_REGEXP, '');
@@ -77,7 +82,8 @@ export const THUMBNAIL_WIDTH_MAP: Record<GetThumbnailByUriSizeEnum, number> = {
  * @returns The thumbnail URL with width parameter, or original URL if size is invalid
  *
  * @remarks
- * This method handles three scenarios:
+ * Mock mode returns the original URL without using Halo's thumbnail service.
+ * Outside Mock mode, this method handles three scenarios:
  * 1. If URL starts with current origin: Appends `?width={size}` query parameter
  * 2. If URL is a relative path (starts with "/"): Appends `?width={size}` query parameter
  * 3. If URL is external: Routes through Halo's thumbnail API endpoint
@@ -100,6 +106,11 @@ export const THUMBNAIL_WIDTH_MAP: Record<GetThumbnailByUriSizeEnum, number> = {
  * ```
  */
 export function getThumbnailUrl(url: string, size: GetThumbnailByUriSizeEnum) {
+  if (import.meta.env.VITE_MOCK_ENABLED === 'true') {
+    // External placeholder images can be loaded directly without Halo's thumbnail proxy.
+    return url;
+  }
+
   const { halo } = useAppConfig();
   const origin = halo.baseURL;
 

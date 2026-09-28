@@ -192,20 +192,19 @@ async function resolveResponse(response: ResponseLike, method: RequestMethodLike
 
 const appConfig = useAppConfig();
 const { requestAdapter, statesHook } = AdapterUniapp();
+const mockEnabled = import.meta.env.VITE_MOCK_ENABLED === 'true';
 
-const requestAdapterFinal =
-  import.meta.env.VITE_MOCK_ENABLED === 'true'
-    ? createAlovaMockAdapter(mockGroups, {
-        enable: true,
-        delay: import.meta.env.VITE_MOCK_DELAY ?? 400,
-        mockRequestLogger: import.meta.env.DEV,
-        httpAdapter: requestAdapter,
-        onMockResponse: uniappMockResponse,
-      })
-    : requestAdapter;
+const requestAdapterFinal = mockEnabled
+  ? createAlovaMockAdapter(mockGroups, {
+      enable: true,
+      delay: import.meta.env.VITE_MOCK_DELAY ?? 400,
+      mockRequestLogger: import.meta.env.DEV,
+      onMockResponse: uniappMockResponse,
+    })
+  : requestAdapter;
 
 export const alovaInst = createAlova({
-  baseURL: appConfig.halo.baseURL,
+  baseURL: mockEnabled ? 'https://mock.invalid' : appConfig.halo.baseURL,
   timeout: appConfig.halo.timeout,
   cacheFor: {
     GET: 0,

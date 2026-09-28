@@ -1,7 +1,7 @@
 import { defineMock } from '@alova/mock';
 import { faker } from '@faker-js/faker/locale/zh_CN';
 import type { DetailedUser, User } from '@halo-dev/api-client';
-import type { LoginResult } from '@/types/auth';
+import { createMockSilentLoginResult, createMockTokenResult } from '@/mock/data/session';
 
 function mockUser(): User {
   return {
@@ -54,13 +54,6 @@ function mockDetailedUser(isAnonymous = false): DetailedUser {
   };
 }
 
-function mockTokenResult(): LoginResult {
-  return {
-    tokenValue: faker.string.alphanumeric(64),
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-  };
-}
-
 export default defineMock({
   /**
    * Validate credentials and fetch current user info (restore login state on startup)
@@ -80,37 +73,31 @@ export default defineMock({
    * Exchange Mini Program code for a token (mock: 50% regular token, 50% anonymous token)
    * POST /login/mp/:platform
    */
-  '[POST]/login/mp/{platform}': () => {
-    const result = mockTokenResult();
-    if (Math.random() > 0.5) {
-      result.tokenValue = `anonymous_${result.tokenValue}`;
-    }
-    return result;
-  },
+  '[POST]/login/mp/{platform}': () => createMockSilentLoginResult(),
 
   /**
    * One-tap phone login (WeChat getPhoneNumber)
    * POST /login/mp/{platform}/phone-quick
    */
-  '[POST]/login/mp/{platform}/phone-quick': () => mockTokenResult(),
+  '[POST]/login/mp/{platform}/phone-quick': () => createMockTokenResult(),
 
   /**
    * Phone number + SMS verification code login
    * POST /login/mp/{platform}/phone-code
    */
-  '[POST]/login/mp/{platform}/phone-code': () => mockTokenResult(),
+  '[POST]/login/mp/{platform}/phone-code': () => createMockTokenResult(),
 
   /**
    * Email + verification code login
    * POST /login/mp/{platform}/email
    */
-  '[POST]/login/mp/{platform}/email': () => mockTokenResult(),
+  '[POST]/login/mp/{platform}/email': () => createMockTokenResult(),
 
   /**
    * Account/password login
    * POST /login/mp/{platform}/username
    */
-  '[POST]/login/mp/{platform}/username': () => mockTokenResult(),
+  '[POST]/login/mp/{platform}/username': () => createMockTokenResult(),
 
   /**
    * Send verification code (SMS or email)
