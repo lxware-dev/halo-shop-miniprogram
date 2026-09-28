@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
@@ -58,21 +58,32 @@ async function loadOrderData() {
   if (!orderCode.value) {
     return;
   }
-  await runOrderDetail({ orderCode: orderCode.value });
-  void runFulfillments({ orderCode: orderCode.value }).catch(() => {});
+  await Promise.allSettled([
+    runOrderDetail({ orderCode: orderCode.value }),
+    runFulfillments({ orderCode: orderCode.value }),
+  ]);
 }
 
-onLoad(async (options) => {
+onLoad((options) => {
   if (!guardCurrentPageAccess()) {
     return;
   }
   if (options?.orderCode) {
     orderCode.value = options.orderCode;
-    try {
-      await loadOrderData();
-    } catch {
-      // ignore
-    }
+  }
+});
+
+onShow(() => {
+  if (orderCode.value) {
+    void loadOrderData();
+  }
+});
+
+onPullDownRefresh(async () => {
+  try {
+    await loadOrderData();
+  } finally {
+    uni.stopPullDownRefresh();
   }
 });
 
@@ -82,7 +93,7 @@ function retryLoadData() {
 
 function retryFulfillments() {
   if (orderCode.value) {
-    void runFulfillments({ orderCode: orderCode.value }).catch(() => {});
+    void loadOrderData();
   }
 }
 
@@ -91,7 +102,53 @@ const statusInfo = computed(() => {
   if (!orderRaw) {
     return { label: '', subtitle: '', textClass: '', bgClass: '', heroBgClass: 'bg-brand' };
   }
-  return getOrderStatusInfo(orderRaw);
+  const baseStatus = getOrderStatusInfo(orderRaw);
+  if (
+    orderRaw.paymentStatus !== 'PAID' ||
+    orderRaw.status !== 'OPEN' ||
+    (orderRaw.refundStatus && orderRaw.refundStatus !== 'NONE') ||
+    requiresShipping(orderRaw)
+  ) {
+    return baseStatus;
+  }
+
+  const virtualFulfillments = fulfillments.value.filter((item) => item.type === 'VIRTUAL');
+  if (!virtualFulfillments.length) {
+    return baseStatus;
+  }
+
+  const completed = virtualFulfillments.filter((item) => item.status === 'COMPLETED').length;
+  if (completed === virtualFulfillments.length) {
+    return {
+      ...baseStatus,
+      label: t('order.virtual.hero.completed'),
+      subtitle: t('order.virtual.hero.completedSubtitle'),
+    };
+  }
+  if (completed > 0) {
+    return {
+      ...baseStatus,
+      label: t('order.virtual.hero.partial'),
+      subtitle: t('order.virtual.hero.partialSubtitle'),
+    };
+  }
+  if (
+    virtualFulfillments.some(
+      (item) =>
+        item.status === 'PENDING' || item.status === 'PROCESSING' || item.status === 'READY',
+    )
+  ) {
+    return {
+      ...baseStatus,
+      label: t('order.virtual.hero.processing'),
+      subtitle: t('order.virtual.hero.processingSubtitle'),
+    };
+  }
+  return {
+    ...baseStatus,
+    label: t('order.virtual.hero.failed'),
+    subtitle: t('order.virtual.hero.failedSubtitle'),
+  };
 });
 
 const orderRequiresShipping = computed(() => !!order.value && requiresShipping(order.value));
@@ -256,7 +313,7 @@ function onCopyDeliveryContent(value: string) {
 const openingResource = ref(false);
 
 async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse) {
-  if (import.meta.env.VITE_MOCK_ENABLED === 'true') {
+  if (import.meta.env.VITE_MOCK_ENABLED === 'true' && resource.resourceType !== 'STATIC_URL') {
     uni.showToast({ title: t('order.virtual.mockDownloadUnavailable'), icon: 'none' });
     return;
   }

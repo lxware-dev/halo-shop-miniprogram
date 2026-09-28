@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad, onReachBottom } from '@dcloudio/uni-app';
+import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppEmpty from '@/components/common/AppEmpty.vue';
@@ -135,10 +135,12 @@ onLoad((options) => {
       activeTab.value = idx;
     }
   }
-  if (!guardCurrentPageAccess()) {
-    return;
+});
+
+onShow(() => {
+  if (guardCurrentPageAccess()) {
+    void refreshOrders();
   }
-  void refreshOrders();
 });
 
 onReachBottom(() => {
@@ -160,6 +162,14 @@ function getItemSpecText(item: OrderItemResponse): string {
 
 function onGoDetail(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/order-detail/index?orderCode=${order.orderCode}` });
+}
+
+function showVirtualDeliveryAction(order: OrderResponse) {
+  return (
+    order.paymentStatus === 'PAID' &&
+    !requiresShipping(order) &&
+    !!order.items?.some((item) => item.productVariantSnapshot?.shippingRequired === false)
+  );
 }
 
 // function onCancelOrder(_order: OrderResponse) {
@@ -389,6 +399,13 @@ function goShopping() {
           </text>
 
           <view class="flex items-center gap-2">
+            <view
+              v-if="showVirtualDeliveryAction(order)"
+              class="flex items-center px-3.5 py-2 rounded-full border border-solid border-brand"
+              @tap.stop="onGoDetail(order)"
+            >
+              <text class="text-xs text-brand">{{ $t('order.virtual.viewDelivery') }}</text>
+            </view>
             <!-- TODO: cancel order action -->
             <!-- <view
               v-if="showCancel(order)"

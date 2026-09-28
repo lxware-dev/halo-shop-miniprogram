@@ -37,6 +37,7 @@
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei --mode production",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union --mode production",
     "type-check": "vue-tsc --noEmit",
+    "test:virtual-mock": "node scripts/test-virtual-mock.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "eslint . --fix; prettier --write .",

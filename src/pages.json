@@ -139,6 +139,7 @@
         {
           "path": "order-detail/index",
           "style": {
+            "enablePullDownRefresh": true,
             "navigationBarTitleText": "订单详情",
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"

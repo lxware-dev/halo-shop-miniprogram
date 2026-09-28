@@ -56,6 +56,13 @@ function toggleSecret(key: string) {
     <view class="flex items-center gap-2 mb-4">
       <view class="rounded-full bg-brand w-1 h-4" />
       <text class="text-sm text-slate-950 font-medium">{{ $t('order.virtual.title') }}</text>
+      <button
+        v-if="paid && !loading"
+        class="m-0 ml-auto px-2 py-1 text-xs text-brand bg-brand/10 rounded-1.5"
+        @tap="emit('retry')"
+      >
+        {{ $t('order.virtual.refresh') }}
+      </button>
     </view>
 
     <text v-if="!paid" class="text-sm text-slate-500">{{ $t('order.virtual.unpaid') }}</text>

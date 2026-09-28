@@ -2,6 +2,7 @@ import type { CustomerDigitalResourceUcResponse } from '@halo-dev/api-client';
 import { useAppConfig } from '@/config';
 import { ensureSessionInitialized, refreshSession } from '@/services/session';
 import { useUserStore } from '@/store';
+import { validHttpsResourceUrl } from '@/helpers/resource-url';
 
 const DOCUMENT_EXTENSIONS = new Set(['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'pdf']);
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
@@ -9,8 +10,19 @@ const FILE_EXTENSION_PATTERN = /\.([a-z0-9]+)(?:[?#].*)?$/i;
 const TRAILING_SLASH_PATTERN = /\/$/;
 
 function resourceExtension(resource: CustomerDigitalResourceUcResponse) {
-  const name = resource.resourceName ?? resource.resourceUrl ?? '';
-  return FILE_EXTENSION_PATTERN.exec(name)?.[1]?.toLowerCase() ?? '';
+  return (
+    FILE_EXTENSION_PATTERN.exec(resource.resourceName ?? '')?.[1]?.toLowerCase() ??
+    FILE_EXTENSION_PATTERN.exec(resource.resourceUrl ?? '')?.[1]?.toLowerCase() ??
+    ''
+  );
+}
+
+function staticResourceUrl(resource: CustomerDigitalResourceUcResponse) {
+  const url = validHttpsResourceUrl(resource.resourceUrl);
+  if (!url) {
+    throw new Error('Invalid digital resource URL');
+  }
+  return url;
 }
 
 function downloadUrl(publicId: string) {
@@ -27,6 +39,22 @@ function downloadWithCredential(url: string, credential: string) {
         'X-Sales-Channel': 'MINI_PROGRAM',
       },
       success: resolve,
+      fail: reject,
+    });
+  });
+}
+
+function downloadPublicFile(url: string) {
+  return new Promise<{ tempFilePath: string; statusCode: number }>((resolve, reject) => {
+    uni.downloadFile({ url, success: resolve, fail: reject });
+  });
+}
+
+function openWebResource(url: string, title: string) {
+  return new Promise<void>((resolve, reject) => {
+    uni.navigateTo({
+      url: `/subpkg-common/webview/index?resourceUrl=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+      success: () => resolve(),
       fail: reject,
     });
   });
@@ -73,9 +101,32 @@ function shareFile(filePath: string, fileName?: string) {
 
 /** Validate purchase through Pro before downloading the temporary file. */
 export async function openPurchasedDigitalResource(resource: CustomerDigitalResourceUcResponse) {
-  if (import.meta.env.VITE_MOCK_ENABLED === 'true') {
+  if (import.meta.env.VITE_MOCK_ENABLED === 'true' && resource.resourceType !== 'STATIC_URL') {
     throw new Error('Mock resources do not provide downloadable files');
   }
+  if (resource.resourceType === 'STATIC_URL') {
+    const url = staticResourceUrl(resource);
+    const extension = resourceExtension(resource);
+    if (!DOCUMENT_EXTENSIONS.has(extension) && !IMAGE_EXTENSIONS.has(extension)) {
+      await openWebResource(url, resource.resourceName ?? '');
+      return;
+    }
+    try {
+      const response = await downloadPublicFile(url);
+      if (response.statusCode !== 200 || !response.tempFilePath) {
+        throw new Error(`Digital resource download failed: ${response.statusCode}`);
+      }
+      if (IMAGE_EXTENSIONS.has(extension)) {
+        await previewImage(response.tempFilePath);
+      } else {
+        await openDocument(response.tempFilePath, extension);
+      }
+    } catch {
+      await openWebResource(url, resource.resourceName ?? '');
+    }
+    return;
+  }
+
   if (!resource.publicId) {
     throw new Error('Missing digital resource publicId');
   }

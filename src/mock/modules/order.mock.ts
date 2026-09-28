@@ -15,6 +15,7 @@ import {
 } from '@halo-dev/api-client';
 import type { PageResponse } from '@/types/api';
 import { createdOrdersMap } from './checkout.mock';
+import { MOCK_VIRTUAL_VARIANT_ID } from '@/mock/data/virtual-product';
 
 function generateShippingAddress(): OrderShippingAddress {
   return {
@@ -232,22 +233,30 @@ function getAllOrders(): OrderResponse[] {
         specValues: item.productVariant?.specValues ?? [],
         shippingRequired: item.productVariant?.shippingRequired ?? true,
       },
-      fulfilledQuantity: 0,
+      fulfilledQuantity:
+        mock.paidAt && item.productVariant?.shippingRequired === false ? item.quantity : 0,
       refundedQuantity: 0,
     }));
 
     return {
       orderCode: mock.orderCode,
       status: 'OPEN',
-      paymentStatus: 'PENDING',
-      fulfillmentStatus: 'PENDING',
+      paymentStatus: mock.paidAt ? 'PAID' : 'PENDING',
+      fulfillmentStatus: mock.paidAt
+        ? items.some((item) => item.productVariantSnapshot?.shippingRequired)
+          ? 'PROCESSING'
+          : 'FULFILLED'
+        : 'PENDING',
       refundStatus: 'NONE',
       totalAmount: mock.payableAmount,
       items,
-      shippingAddress: generateShippingAddress(),
+      shippingAddress: items.some((item) => item.productVariantSnapshot?.shippingRequired)
+        ? generateShippingAddress()
+        : undefined,
       customer,
       createdAt: mock.createdAt,
-      updatedAt: mock.createdAt,
+      updatedAt: mock.paidAt ?? mock.createdAt,
+      paidAt: mock.paidAt,
     };
   });
 
@@ -317,6 +326,41 @@ export default defineMock({
    * GET /apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/fulfillments
    */
   '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/fulfillments': ({ params }) => {
+    const created = createdOrdersMap.get(params.orderCode);
+    if (
+      created?.paidAt &&
+      created.items.some((item) => item.productVariant?.id === MOCK_VIRTUAL_VARIANT_ID)
+    ) {
+      const virtualItems =
+        getAllOrders()
+          .find((order) => order.orderCode === params.orderCode)
+          ?.items?.filter((item) => item.productVariantId === MOCK_VIRTUAL_VARIANT_ID) ?? [];
+      return [
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Completed,
+          completedAt: created.paidAt,
+          items: virtualItems.map((orderItem) => ({
+            orderItem,
+            quantity: orderItem.quantity,
+            instructions: '复制卡密后，在商品说明中的激活页面兑换。',
+            cdks: Array.from({ length: orderItem.quantity ?? 1 }, (_, index) => ({
+              code: `MOCK-${params.orderCode}-${index + 1}`,
+              secret: 'MOCK-SECRET',
+              status: 'SOLD' as const,
+            })),
+            digitalResources: [
+              {
+                publicId: `mock-resource-${params.orderCode}`,
+                resourceName: '在线资源链接',
+                resourceType: 'STATIC_URL' as const,
+                resourceUrl: 'https://example.com/',
+              },
+            ],
+          })),
+        },
+      ] satisfies FulfillmentUcResponse[];
+    }
     if (params.orderCode === 'MOCK-SPLIT-SHIPPING') {
       return [
         {
@@ -447,7 +491,12 @@ export default defineMock({
     params,
   }) => {
     const sessionCode = `pay_${params.orderCode}_${faker.string.alphanumeric(16)}`;
-    const finalStatus = faker.helpers.arrayElement(['SUCCESS', 'FAILED'] as const);
+    const created = createdOrdersMap.get(params.orderCode);
+    const finalStatus = created?.items.some(
+      (item) => item.productVariant?.id === MOCK_VIRTUAL_VARIANT_ID,
+    )
+      ? 'SUCCESS'
+      : faker.helpers.arrayElement(['SUCCESS', 'FAILED'] as const);
     sessionStatusMap.set(sessionCode, { status: 'PENDING', queryCount: 0, finalStatus });
     const prepayId = `mock_prepay_${faker.string.alphanumeric(20)}`;
 
@@ -499,6 +548,13 @@ export default defineMock({
     session.queryCount += 1;
     if (session.queryCount >= 2) {
       session.status = session.finalStatus;
+      if (session.status === 'SUCCESS') {
+        const orderCode = params.sessionCode.split('_')[1];
+        const created = createdOrdersMap.get(orderCode);
+        if (created && !created.paidAt) {
+          created.paidAt = new Date().toISOString();
+        }
+      }
     }
     return session.status;
   },
