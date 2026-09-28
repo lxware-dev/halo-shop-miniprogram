@@ -26,7 +26,7 @@ export function useAuth() {
   /**
    * Initialize the token when the app starts.
    * - If the local token has not expired, reuse it directly
-   * - Otherwise call uni.login to exchange for a new token
+   * - Otherwise obtain a new token (using Mock data in Mock mode)
    *
    * Note: init does not infer login state or update hasLogin automatically.
    */

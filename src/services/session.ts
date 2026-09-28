@@ -4,6 +4,7 @@ import { useUserStore } from '@/store';
 import type { LoginResult } from '@/types/auth';
 import { isTimeExpired } from '@/utils/date';
 import { buildQuery } from '@/utils/encode';
+import { createMockSilentLoginResult } from '@/mock/data/session';
 
 const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const TRAILING_SLASH_PATTERN = /\/$/;
@@ -73,8 +74,10 @@ export async function ensureSessionInitialized(forceRefresh = false) {
   }
 
   const initTask = (async () => {
-    const { code } = await uni.login({});
-    const result = await requestMiniProgramToken(code);
+    const result =
+      import.meta.env.VITE_MOCK_ENABLED === 'true'
+        ? createMockSilentLoginResult()
+        : await requestMiniProgramToken((await uni.login({})).code);
     applyLoginSession(result);
   })();
 
