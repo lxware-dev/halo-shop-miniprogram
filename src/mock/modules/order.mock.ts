@@ -471,12 +471,12 @@ export default defineMock({
     return [
       {
         enabled: true,
-        icon: 'string',
-        id: 0,
-        name: 'string',
+        icon: 'logo-wechatpay',
+        id: 1,
+        name: '微信支付',
         provider: 'WECHAT_PAY',
-        providerDisplayName: 'string',
-        providerIconUrl: 'string',
+        providerDisplayName: '微信支付',
+        providerIconUrl: '',
         scene: 'MINI_PROGRAM',
       },
     ] satisfies PaymentMethodPublicResponse[];

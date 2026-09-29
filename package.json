@@ -66,7 +66,7 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000420260319001",
     "@dcloudio/uni-mp-xhs": "3.0.0-alpha-5000420260319001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-alpha-5000420260319001",
-    "@halo-dev/api-client": "file:halo-dev-api-client-2.24.tgz",
+    "@halo-dev/api-client": "file:halo-dev-api-client-2.27.0.tgz",
     "@tdesign/uniapp": "^0.7.3",
     "@uni-helper/uni-use": "^0.19.17",
     "alova": "^3.5.1",

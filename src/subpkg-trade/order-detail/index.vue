@@ -157,6 +157,33 @@ const showVirtualFulfillment = computed(
     !!order.value?.items?.some((item) => item.productVariantSnapshot?.shippingRequired === false) ||
     fulfillments.value.some((fulfillment) => fulfillment.type === 'VIRTUAL'),
 );
+const virtualOnlyOrder = computed(
+  () => showVirtualFulfillment.value && !orderRequiresShipping.value,
+);
+
+const virtualHeroState = computed(() => {
+  if (order.value?.paymentStatus !== 'PAID') {
+    return 'is-pending';
+  }
+  const virtual = fulfillments.value.filter((item) => item.type === 'VIRTUAL');
+  if (virtual.length && virtual.every((item) => item.status === 'COMPLETED')) {
+    return 'is-complete';
+  }
+  if (virtual.some((item) => item.status === 'FAILED' || item.status === 'CANCELLED')) {
+    return 'is-error';
+  }
+  return 'is-progress';
+});
+
+const virtualHeroIconColor = computed(() => {
+  if (virtualHeroState.value === 'is-complete') {
+    return '#399976';
+  }
+  if (virtualHeroState.value === 'is-error') {
+    return '#dc6660';
+  }
+  return '#b78a52';
+});
 
 const shippingPackages = computed(() => {
   if (!orderRequiresShipping.value) {
@@ -218,6 +245,10 @@ const showConfirmReceive = computed(() => !!order.value && canConfirmReceive(ord
 const showViewLogistics = computed(() => !!order.value && canViewLogistics(order.value));
 // const showCancelOrder = computed(() => !!order.value && canCancelOrder(order.value));
 const showBuyAgain = computed(() => !!order.value && canBuyAgain(order.value));
+const hasBottomActions = computed(
+  () =>
+    showPayNow.value || showViewLogistics.value || showConfirmReceive.value || showBuyAgain.value,
+);
 
 function onPayNow() {
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${orderCode.value}` });
@@ -338,41 +369,70 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
 
   <view
     v-else-if="order"
-    class="flex flex-col bg-bg-page min-h-screen"
-    style="padding-bottom: calc(120rpx + env(safe-area-inset-bottom))"
+    class="flex min-h-screen flex-col bg-bg-page"
+    :class="
+      hasBottomActions
+        ? 'pb-[calc(120rpx+env(safe-area-inset-bottom))]'
+        : 'pb-[calc(32rpx+env(safe-area-inset-bottom))]'
+    "
   >
-    <view class="mx-3 mt-3 rounded-2 overflow-hidden relative h-32" :class="statusInfo.heroBgClass">
+    <view
+      class="mx-3 mt-3 relative h-32 overflow-hidden rounded-2 shadow-card"
+      :class="
+        virtualOnlyOrder
+          ? virtualHeroState === 'is-complete'
+            ? 'bg-[#ebf8f1]'
+            : virtualHeroState === 'is-error'
+              ? 'bg-[#fff1ef]'
+              : 'bg-[#fff9f1]'
+          : statusInfo.heroBgClass
+      "
+    >
       <view
-        class="absolute inset-0"
-        style="background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.1) 100%)"
+        v-if="!virtualOnlyOrder"
+        class="absolute inset-0 bg-gradient-to-r from-transparent to-black/10"
       />
-      <view class="absolute right-6 top-8.5 opacity-20">
+      <view
+        class="absolute right-6 top-8.5"
+        :class="virtualOnlyOrder ? 'opacity-25' : 'opacity-20'"
+      >
         <TIcon
           v-if="order.fulfillmentStatus === 'PROCESSING' || order.fulfillmentStatus === 'FULFILLED'"
           name="secured"
-          v-bind="{ size: '160rpx', color: '#ffffff' }"
+          v-bind="{ size: '160rpx', color: virtualOnlyOrder ? virtualHeroIconColor : '#ffffff' }"
         />
         <TIcon
           v-else-if="order.paymentStatus === 'PENDING'"
           name="wallet"
-          v-bind="{ size: '160rpx', color: '#ffffff' }"
+          v-bind="{ size: '160rpx', color: virtualOnlyOrder ? virtualHeroIconColor : '#ffffff' }"
         />
-        <TIcon v-else name="secured" v-bind="{ size: '160rpx', color: '#ffffff' }" />
+        <TIcon
+          v-else
+          name="secured"
+          v-bind="{ size: '160rpx', color: virtualOnlyOrder ? virtualHeroIconColor : '#ffffff' }"
+        />
       </view>
       <view class="absolute left-6 top-6 flex flex-col gap-1">
-        <text class="text-white font-bold text-2xl">
+        <text v-if="virtualOnlyOrder" class="mb-0.5 text-xs font-semibold text-brand">{{
+          $t('order.virtual.title')
+        }}</text>
+        <text
+          class="font-bold text-2xl"
+          :class="virtualOnlyOrder ? 'text-slate-950' : 'text-white'"
+        >
           {{ statusInfo.label }}
         </text>
-        <text v-if="statusInfo.subtitle" class="text-sm text-white/80">
+        <text
+          v-if="statusInfo.subtitle"
+          class="text-sm"
+          :class="virtualOnlyOrder ? 'text-slate-600' : 'text-white/80'"
+        >
           {{ statusInfo.subtitle }}
         </text>
       </view>
     </view>
 
-    <view
-      v-if="shippingPackages.length"
-      class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5"
-    >
+    <view v-if="shippingPackages.length" class="mx-3 mt-3 rounded-2 bg-white p-4 shadow-card">
       <view class="flex flex-col gap-3" :class="shippingAddr ? 'pb-4' : ''">
         <view
           v-for="(shippingPackage, index) in shippingPackages"
@@ -395,8 +455,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
 
       <view
         v-if="shippingAddr"
-        class="flex gap-4 items-start pt-4"
-        style="border-top: 1rpx solid rgba(238, 43, 43, 0.06)"
+        class="flex gap-4 items-start pt-4 border-t border-t-solid border-t-brand/5"
       >
         <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
           <TIcon name="location" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
@@ -413,10 +472,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
       </view>
     </view>
 
-    <view
-      v-else-if="shippingAddr"
-      class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5"
-    >
+    <view v-else-if="shippingAddr" class="mx-3 mt-3 rounded-2 bg-white p-4 shadow-card">
       <view class="flex gap-4 items-start">
         <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
           <TIcon name="location" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
@@ -436,6 +492,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
     <VirtualFulfillmentSection
       v-if="showVirtualFulfillment"
       :paid="order.paymentStatus === 'PAID'"
+      :cancelled="order.status === 'CANCELLED'"
       :fulfillments="fulfillments"
       :loading="fulfillmentsLoading"
       :error="fulfillmentError"
@@ -444,9 +501,10 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
       @download="onOpenDigitalResource"
     />
 
-    <view
-      class="mx-3 mt-3 bg-white rounded-2 overflow-hidden shadow-card border border-solid border-brand/5"
-    >
+    <view class="mx-3 mt-3 overflow-hidden rounded-2 bg-white shadow-card">
+      <view class="border-b border-b-solid border-b-slate-100 px-4 pb-3 pt-4">
+        <text class="text-sm font-medium text-slate-950">{{ $t('order.itemsTitle') }}</text>
+      </view>
       <view class="flex flex-col gap-4 p-4">
         <view
           v-for="item in order.items"
@@ -454,8 +512,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
           class="flex gap-4 items-start"
         >
           <view
-            class="shrink-0 rounded-1.5 overflow-hidden bg-slate-100 w-20 h-20"
-            style="border: 1rpx solid rgba(238, 43, 43, 0.06)"
+            class="shrink-0 rounded-1.5 overflow-hidden bg-slate-100 w-20 h-20 border border-solid border-brand/5"
           >
             <image
               v-if="item.itemImageUrl"
@@ -478,7 +535,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
               </text>
             </view>
             <view class="flex items-end justify-between">
-              <text class="text-base text-brand font-bold">
+              <text class="text-base font-semibold text-slate-950">
                 {{ formatCurrency(item.unitPrice) }}
               </text>
               <text class="text-xs text-slate-400">x {{ item.quantity }}</text>
@@ -487,10 +544,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
         </view>
       </view>
 
-      <view
-        class="flex flex-col gap-3 px-4 pt-4 pb-4"
-        style="border-top: 1rpx solid rgba(238, 43, 43, 0.06)"
-      >
+      <view class="flex flex-col gap-3 border-t border-t-solid border-t-slate-100 px-4 pb-4 pt-4">
         <view class="flex items-center justify-between">
           <text class="text-sm text-slate-500">{{ $t('order.productTotal') }}</text>
           <text class="text-sm text-slate-950">{{ formatCurrency(subtotal) }}</text>
@@ -498,32 +552,38 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
         <view class="flex items-center justify-between">
           <text class="text-sm text-slate-500">{{ $t('order.freight') }}</text>
           <text class="text-sm text-slate-950">
-            {{ shippingFee > 0 ? formatCurrency(shippingFee) : $t('checkout.freeShipping') }}
+            {{
+              shippingFee > 0
+                ? formatCurrency(shippingFee)
+                : virtualOnlyOrder
+                  ? $t('checkout.noShipping')
+                  : $t('checkout.freeShipping')
+            }}
           </text>
         </view>
-        <view class="flex items-center justify-between pt-1">
-          <text class="text-sm text-slate-950">{{ $t('order.total') }}</text>
+        <view
+          class="flex items-center justify-between border-t border-t-solid border-t-slate-100 pt-3"
+        >
+          <text class="text-sm font-medium text-slate-950">{{ $t('order.total') }}</text>
           <text class="text-xl text-brand font-bold">{{ formatCurrency(order.totalAmount) }}</text>
         </view>
       </view>
     </view>
 
-    <view class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5">
-      <view class="flex items-center gap-2 mb-4">
-        <view class="rounded-full bg-brand w-1 h-4" />
+    <view class="mx-3 mt-3 rounded-2 bg-white p-4 shadow-card">
+      <view class="mb-4 flex items-center">
         <text class="text-sm text-slate-950 font-medium">{{ $t('order.infoTitle') }}</text>
       </view>
 
       <view class="flex flex-col gap-3">
         <view class="flex items-center">
-          <text class="text-xs text-slate-500 shrink-0" style="width: 160rpx">{{
-            $t('order.code')
-          }}</text>
-          <text class="text-xs text-slate-950 flex-1 min-w-0" style="word-break: break-all">
+          <text class="text-xs text-slate-500 shrink-0 w-[160rpx]">{{ $t('order.code') }}</text>
+          <text class="text-xs text-slate-950 flex-1 min-w-0 break-all">
             {{ order.orderCode }}
           </text>
           <view
-            class="shrink-0 flex items-center justify-center px-2 py-0.5 rounded-1.5 ml-2 bg-brand/10"
+            role="button"
+            class="ml-2 flex min-h-[64rpx] shrink-0 items-center justify-center px-2"
             @tap="onCopyOrderCode"
           >
             <text class="text-xs text-brand">{{ $t('common.copy') }}</text>
@@ -562,7 +622,7 @@ async function onOpenDigitalResource(resource: CustomerDigitalResourceUcResponse
   </view>
 
   <view
-    v-if="order"
+    v-if="order && hasBottomActions"
     class="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-end gap-3 px-4 pt-4 bg-white/90 border-t border-t-solid border-t-brand/10 shadow-up backdrop-blur-md pb-safe-sm"
   >
     <!-- TODO: cancel order action -->

@@ -11,16 +11,13 @@ export default defineConfig({
     'text-emerald-700',
     'bg-emerald-100',
     'bg-emerald-500',
-    'bg-amber-500',
     'text-blue-700',
     'bg-blue-100',
-    'bg-blue-500',
     'text-orange-700',
     'bg-orange-100',
     'text-brand',
     'bg-brand',
     'bg-red-100',
-    'bg-red-500',
   ],
   theme: {
     colors: {

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onHide, onLoad, onShow } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
+import { canPayNow } from '@/helpers/order';
 import { openLegalDocument } from '@/helpers/legal';
 import { sendRequest, useQuery } from '@/hooks/useRequest';
 import { formatCurrency, formatPriceByLocale, getCurrencySymbol } from '@/utils/format';
@@ -21,7 +22,10 @@ const { data: orderData, run: runOrder } = useQuery<OrderResponse, { orderCode: 
   (params: { orderCode: string }) => orderApi.getOrder(params.orderCode),
   { immediate: false },
 );
-const payableAmount = computed(() => orderData.value?.totalAmount ?? 0);
+const payableAmount = computed(
+  () => orderData.value?.payableAmount ?? orderData.value?.totalAmount ?? 0,
+);
+const paymentAvailable = computed(() => !!orderData.value && canPayNow(orderData.value));
 const currencySymbol = getCurrencySymbol();
 
 onLoad(async (options) => {
@@ -31,19 +35,65 @@ onLoad(async (options) => {
   if (options?.orderCode) {
     orderCode.value = options.orderCode;
   }
-  if (orderCode.value) {
-    try {
-      await runOrder({ orderCode: orderCode.value });
-    } catch {
-      // Ignore and keep the amount at 0
-    }
-  }
   await loadPaymentMethods();
 });
 
 const paymentMethods = ref<PaymentMethodPublicResponse[]>([]);
 const selectedMethodId = ref<number | null>(null);
 const paying = ref(false);
+const STATUS_REFRESH_INTERVAL = 5000;
+let statusRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+let pageVisible = false;
+let redirecting = false;
+
+function clearStatusRefreshTimer() {
+  if (statusRefreshTimer) {
+    clearTimeout(statusRefreshTimer);
+    statusRefreshTimer = null;
+  }
+}
+
+function scheduleStatusRefresh() {
+  clearStatusRefreshTimer();
+  if (pageVisible && !paying.value && !redirecting) {
+    statusRefreshTimer = setTimeout(() => void refreshOrderStatus(), STATUS_REFRESH_INTERVAL);
+  }
+}
+
+function redirectToOrderDetail() {
+  if (redirecting) {
+    return;
+  }
+  redirecting = true;
+  clearStatusRefreshTimer();
+  uni.redirectTo({ url: `/subpkg-trade/order-detail/index?orderCode=${orderCode.value}` });
+}
+
+async function refreshOrderStatus() {
+  if (!pageVisible || !orderCode.value || redirecting || paying.value) {
+    return;
+  }
+  try {
+    const latest = await runOrder({ orderCode: orderCode.value });
+    if (pageVisible && !canPayNow(latest)) {
+      redirectToOrderDetail();
+      return;
+    }
+  } catch {
+    // Keep the payment action unavailable until the order can be checked again.
+  }
+  scheduleStatusRefresh();
+}
+
+onShow(() => {
+  pageVisible = true;
+  void refreshOrderStatus();
+});
+
+onHide(() => {
+  pageVisible = false;
+  clearStatusRefreshTimer();
+});
 const { run: runPaymentMethods } = useQuery<PaymentMethodPublicResponse[], { orderCode: string }>(
   (_params: { orderCode: string }) => orderApi.getPaymentMethods(),
   { immediate: false },
@@ -117,6 +167,7 @@ function clearPollTimer() {
 
 onUnmounted(() => {
   clearPollTimer();
+  clearStatusRefreshTimer();
 });
 
 /**
@@ -166,7 +217,7 @@ function extractWechatJsapiParams(
 }
 
 async function handlePay() {
-  if (!selectedMethodId.value) {
+  if (selectedMethodId.value == null) {
     uni.showToast({ title: t('payment.selectMethodToast'), icon: 'none' });
     return;
   }
@@ -175,7 +226,14 @@ async function handlePay() {
   }
 
   paying.value = true;
+  clearStatusRefreshTimer();
   try {
+    const latest = await runOrder({ orderCode: orderCode.value });
+    if (!canPayNow(latest)) {
+      paying.value = false;
+      redirectToOrderDetail();
+      return;
+    }
     const response = await sendRequest(
       orderApi.initiatePayment(orderCode.value, {
         paymentMethodId: selectedMethodId.value,
@@ -195,6 +253,7 @@ async function handlePay() {
       !params.paySign
     ) {
       paying.value = false;
+      scheduleStatusRefresh();
       uni.showToast({
         title: paymentErrorMessage || t('payment.invalidParams'),
         icon: 'none',
@@ -233,6 +292,7 @@ async function handlePay() {
     startPolling(sessionCode);
   } catch {
     paying.value = false;
+    scheduleStatusRefresh();
     uni.showToast({ title: t('payment.initiateFailed'), icon: 'none' });
   }
 }
@@ -332,7 +392,7 @@ async function handlePay() {
     >
       <view
         class="flex items-center justify-center rounded-2 py-3.5 w-full bg-brand shadow-brand-btn"
-        :class="paying || paymentMethods.length === 0 ? 'opacity-60' : ''"
+        :class="paying || !paymentAvailable || paymentMethods.length === 0 ? 'opacity-60' : ''"
         @tap="handlePay"
       >
         <text class="text-white text-base font-bold">
