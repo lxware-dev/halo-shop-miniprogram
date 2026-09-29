@@ -4,6 +4,11 @@ import type { ProductResponse, ProductVariantResponse } from '@halo-dev/api-clie
 import type { ListResult } from '@/types/api';
 import type { FilterGroup } from '@/types/filter';
 import { TOP_CATEGORIES, FLAT_SUB_CATEGORIES } from '@/mock/data/categories';
+import {
+  MOCK_VIRTUAL_PRODUCT_ID,
+  mockVirtualProduct,
+  mockVirtualVariant,
+} from '@/mock/data/virtual-product';
 
 // Color and size specs (used to generate SKUs)
 const COLORS = ['黑色', '白色', '红色', '蓝色', '绿色'];
@@ -126,6 +131,7 @@ function generateProduct(id: number): ProductResponse {
 const PRODUCT_POOL: ProductResponse[] = Array.from({ length: 100 }, (_, i) =>
   generateProduct(i + 1),
 );
+PRODUCT_POOL.unshift(mockVirtualProduct);
 
 export default defineMock({
   /**
@@ -204,6 +210,9 @@ export default defineMock({
    */
   '[GET]/apis/mp.api.ecommerce.halo.run/v1alpha1/products/{id}': ({ params }) => {
     const id = Number(params.id);
+    if (id === MOCK_VIRTUAL_PRODUCT_ID) {
+      return mockVirtualProduct;
+    }
     return generateProduct(id);
   },
 
@@ -213,6 +222,9 @@ export default defineMock({
    */
   '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/products/{productId}/variants': ({ params }) => {
     const productId = Number(params.productId);
+    if (productId === MOCK_VIRTUAL_PRODUCT_ID) {
+      return [mockVirtualVariant];
+    }
     const usedColors = faker.helpers.arrayElements(COLORS, { min: 2, max: 3 });
     const usedSizes = faker.helpers.arrayElements(SIZES, { min: 2, max: 3 });
     const variants: ProductVariantResponse[] = [];

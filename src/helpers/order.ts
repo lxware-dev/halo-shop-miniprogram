@@ -58,7 +58,7 @@ const ORDER_STATUS_INFO_PRESETS = {
     label: 'order.status.partialRefunded',
     textClass: 'text-amber-700',
     bgClass: 'bg-amber-100',
-    heroBgClass: 'bg-amber-500',
+    heroBgClass: 'order-hero-warning',
     subtitle: 'order.status.partialRefundedSubtitle',
   },
   COMPLETED: {
@@ -79,21 +79,21 @@ const ORDER_STATUS_INFO_PRESETS = {
     label: 'order.status.authorizingPayment',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
-    heroBgClass: 'bg-blue-500',
+    heroBgClass: 'order-hero-info',
     subtitle: 'order.status.authorizingPaymentSubtitle',
   },
   PAID: {
     label: 'order.status.paid',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
-    heroBgClass: 'bg-blue-500',
+    heroBgClass: 'order-hero-info',
     subtitle: 'order.status.paidSubtitle',
   },
   PAID_NO_SHIPPING: {
     label: 'order.status.paid',
     textClass: 'text-blue-700',
     bgClass: 'bg-blue-100',
-    heroBgClass: 'bg-blue-500',
+    heroBgClass: 'order-hero-info',
     subtitle: 'order.status.paidNoShippingSubtitle',
   },
   PENDING_FULFILLMENT: {
@@ -114,7 +114,7 @@ const ORDER_STATUS_INFO_PRESETS = {
     label: 'order.status.paymentFailed',
     textClass: 'text-red-700',
     bgClass: 'bg-red-100',
-    heroBgClass: 'bg-red-500',
+    heroBgClass: 'order-hero-danger',
     subtitle: 'order.status.paymentFailedSubtitle',
   },
   EXPIRED: {

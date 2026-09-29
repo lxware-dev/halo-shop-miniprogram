@@ -12,7 +12,7 @@ importers:
         specifier: ^2.0.16
         version: 2.0.16(alova@3.5.1)
       '@alova/mock':
-        specifier: ^2.0.20
+        specifier: ^2.0.19
         version: 2.0.20(alova@3.5.1)
       '@alova/shared':
         specifier: ^1.3.2
@@ -66,8 +66,8 @@ importers:
         specifier: 3.0.0-alpha-5000420260319001
         version: 3.0.0-alpha-5000420260319001(@vueuse/core@9.13.0(vue@3.5.32(typescript@5.9.3)))(postcss@8.5.10)(rollup@4.60.2)(vue@3.5.32(typescript@5.9.3))
       '@halo-dev/api-client':
-        specifier: file:halo-dev-api-client-2.24.tgz
-        version: file:halo-dev-api-client-2.24.tgz(axios@1.13.6)
+        specifier: file:halo-dev-api-client-2.27.0.tgz
+        version: file:halo-dev-api-client-2.27.0.tgz(axios@1.20.0)
       '@tdesign/uniapp':
         specifier: ^0.7.3
         version: 0.7.3
@@ -78,7 +78,7 @@ importers:
         specifier: ^3.5.1
         version: 3.5.1
       dayjs:
-        specifier: ^1.11.20
+        specifier: ^1.11.19
         version: 1.11.20
       pinia:
         specifier: ^3.0.4
@@ -90,7 +90,7 @@ importers:
         specifier: ^3.5.32
         version: 3.5.32(typescript@5.9.3)
       vue-i18n:
-        specifier: ^9.14.5
+        specifier: ^9.1.9
         version: 9.14.5(vue@3.5.32(typescript@5.9.3))
     devDependencies:
       '@dcloudio/types':
@@ -109,13 +109,13 @@ importers:
         specifier: 3.0.0-alpha-5000420260319001
         version: 3.0.0-alpha-5000420260319001(@vueuse/core@9.13.0(vue@3.5.32(typescript@5.9.3)))(postcss@8.5.10)(rollup@4.60.2)(vite@5.2.8(@types/node@25.6.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1))(vue@3.5.32(typescript@5.9.3))
       '@faker-js/faker':
-        specifier: ^10.4.0
+        specifier: ^10.3.0
         version: 10.4.0
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.58.2
+        specifier: ^8.56.1
         version: 8.58.2(@typescript-eslint/parser@8.58.2(eslint@10.2.1(jiti@2.6.1))(typescript@5.9.3))(eslint@10.2.1(jiti@2.6.1))(typescript@5.9.3)
       '@typescript-eslint/parser':
-        specifier: ^8.58.2
+        specifier: ^8.56.1
         version: 8.58.2(eslint@10.2.1(jiti@2.6.1))(typescript@5.9.3)
       '@uni-helper/eslint-config':
         specifier: ^0.7.1
@@ -130,10 +130,10 @@ importers:
         specifier: ^3.5.32
         version: 3.5.32
       '@vue/tsconfig':
-        specifier: ^0.9.1
+        specifier: ^0.9.0
         version: 0.9.1(typescript@5.9.3)(vue@3.5.32(typescript@5.9.3))
       eslint:
-        specifier: ^10.2.1
+        specifier: ^10.0.3
         version: 10.2.1(jiti@2.6.1)
       eslint-config-prettier:
         specifier: ^10.1.8
@@ -154,22 +154,22 @@ importers:
         specifier: ^1.8.1
         version: 1.8.1
       prettier:
-        specifier: ^3.8.3
+        specifier: ^3.8.1
         version: 3.8.3
       prettier-plugin-curly:
         specifier: ^0.4.1
         version: 0.4.1(prettier@3.8.3)
       sass:
-        specifier: ^1.99.0
+        specifier: ^1.98.0
         version: 1.99.0
       stylelint:
-        specifier: ^17.8.0
+        specifier: ^17.4.0
         version: 17.8.0(typescript@5.9.3)
       stylelint-config-html:
         specifier: ^1.1.0
         version: 1.1.0(postcss-html@1.8.1)(stylelint@17.8.0(typescript@5.9.3))
       stylelint-config-recommended-scss:
-        specifier: ^17.0.1
+        specifier: ^17.0.0
         version: 17.0.1(postcss@8.5.10)(stylelint@17.8.0(typescript@5.9.3))
       stylelint-config-standard:
         specifier: ^40.0.0
@@ -184,7 +184,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
       unocss:
-        specifier: ^66.6.8
+        specifier: ^66.6.6
         version: 66.6.8(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(vite@5.2.8(@types/node@25.6.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1))
       vite:
         specifier: 5.2.8
@@ -1306,11 +1306,11 @@ packages:
     resolution: {integrity: sha512-sDBWI3yLy8EcDzgobvJTWq1MJYzAkQdpjXuPukga9wXonhpMRvd1Izuo2Qgwey2OiEoRIBr35RMU9HJRoOHzpw==}
     engines: {node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10'}
 
-  '@halo-dev/api-client@file:halo-dev-api-client-2.24.tgz':
-    resolution: {integrity: sha512-gbk9qLqobaCukw3nSlzMTWWwr/ysm7VCvS9Gl2YYbw1eJivz+x2OKKBIBxaUKu7Vi1WCjdhjAXvtOXgdi5e3TA==, tarball: file:halo-dev-api-client-2.24.tgz}
-    version: 2.24.0
+  '@halo-dev/api-client@file:halo-dev-api-client-2.27.0.tgz':
+    resolution: {integrity: sha512-z+hkHxBBUgOLBo1EN5e4LgHrzK5uG00dmN9zZ4hTQre38my16ITFdMtrwmUamAoCkQR27YT7E7FTICt65ndQnQ==, tarball: file:halo-dev-api-client-2.27.0.tgz}
+    version: 2.27.0
     peerDependencies:
-      axios: ^1.12.*
+      axios: ^1.16.0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2630,8 +2630,8 @@ packages:
     peerDependencies:
       postcss: ^8.1.0
 
-  axios@1.13.6:
-    resolution: {integrity: sha512-ChTCHMouEe2kn713WHbQGcuYrr6fXTBiu460OTwWrWob16g1bXn4vtz07Ope7ewMozJAnEquLk5lWQWtBig9DQ==}
+  axios@1.20.0:
+    resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
 
   babel-jest@27.5.1:
     resolution: {integrity: sha512-cdQ5dXjGRd0IBRATiQ4mZGlGlRE8kJpjPOixdNRdT+m3UcNqmYWN6rK6nvtXYfY3D76cb8s/O1Ss8ea24PIwcg==}
@@ -3578,8 +3578,8 @@ packages:
     resolution: {integrity: sha512-f0cRzm6dkyVYV3nPoooP8XlccPQukegwhAnpoLcXy+X+A8KfpGOoXwDr9FLZd3wzgLaBGQBE3lY93Zm/i1JvIQ==}
     engines: {node: '>= 6'}
 
-  form-data@4.0.5:
-    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
+  form-data@4.0.6:
+    resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
     engines: {node: '>= 6'}
 
   format@0.2.2:
@@ -3738,6 +3738,10 @@ packages:
 
   hasown@2.0.3:
     resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
+    engines: {node: '>= 0.4'}
+
+  hasown@2.0.4:
+    resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
   he@1.2.0:
@@ -4976,8 +4980,9 @@ packages:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
 
-  proxy-from-env@1.1.0:
-    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
+  proxy-from-env@2.1.0:
+    resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
+    engines: {node: '>=10'}
 
   psl@1.15.0:
     resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==}
@@ -5005,8 +5010,8 @@ packages:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
     engines: {node: '>=0.6'}
 
-  qs@6.15.1:
-    resolution: {integrity: sha512-6YHEFRL9mfgcAvql/XhwTvf5jKcOiiupt2FiJxHkiX1z4j7WL8J/jRHYLluORvc1XxB5rV20KoeK00gVJamspg==}
+  qs@6.16.0:
+    resolution: {integrity: sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==}
     engines: {node: '>=0.6'}
 
   quansync@0.2.11:
@@ -5224,6 +5229,10 @@ packages:
 
   side-channel@1.1.0:
     resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
+    engines: {node: '>= 0.4'}
+
+  side-channel@1.1.1:
+    resolution: {integrity: sha512-6x6dK6zJdpTzF4sQeNYxwtvBzf6Eg4GtlesS94HOvTudUeyK2WXAaIfmDgsyslYrRBeFIlsi54AYsFGUuhmvrQ==}
     engines: {node: '>= 0.4'}
 
   signal-exit@3.0.7:
@@ -7661,10 +7670,10 @@ snapshots:
 
   '@faker-js/faker@10.4.0': {}
 
-  '@halo-dev/api-client@file:halo-dev-api-client-2.24.tgz(axios@1.13.6)':
+  '@halo-dev/api-client@file:halo-dev-api-client-2.27.0.tgz(axios@1.20.0)':
     dependencies:
-      axios: 1.13.6
-      qs: 6.15.1
+      axios: 1.20.0
+      qs: 6.16.0
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -8588,8 +8597,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.58.2(typescript@5.9.3)
+      '@typescript-eslint/types': 8.58.2
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -9275,13 +9284,15 @@ snapshots:
       postcss: 8.5.10
       postcss-value-parser: 4.2.0
 
-  axios@1.13.6:
+  axios@1.20.0:
     dependencies:
       follow-redirects: 1.16.0
-      form-data: 4.0.5
-      proxy-from-env: 1.1.0
+      form-data: 4.0.6
+      https-proxy-agent: 5.0.1
+      proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
+      - supports-color
 
   babel-jest@27.5.1(@babel/core@7.25.2):
     dependencies:
@@ -9793,7 +9804,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.3
+      hasown: 2.0.4
 
   esbuild@0.20.2:
     optionalDependencies:
@@ -10314,12 +10325,12 @@ snapshots:
       hasown: 2.0.3
       mime-types: 2.1.35
 
-  form-data@4.0.5:
+  form-data@4.0.6:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.3
+      hasown: 2.0.4
       mime-types: 2.1.35
 
   format@0.2.2: {}
@@ -10461,6 +10472,10 @@ snapshots:
       hookified: 1.15.1
 
   hasown@2.0.3:
+    dependencies:
+      function-bind: 1.1.2
+
+  hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
 
@@ -12022,7 +12037,7 @@ snapshots:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
 
-  proxy-from-env@1.1.0: {}
+  proxy-from-env@2.1.0: {}
 
   psl@1.15.0:
     dependencies:
@@ -12046,9 +12061,10 @@ snapshots:
     dependencies:
       side-channel: 1.1.0
 
-  qs@6.15.1:
+  qs@6.16.0:
     dependencies:
-      side-channel: 1.1.0
+      es-define-property: 1.0.1
+      side-channel: 1.1.1
 
   quansync@0.2.11: {}
 
@@ -12301,6 +12317,14 @@ snapshots:
       side-channel-map: 1.0.1
 
   side-channel@1.1.0:
+    dependencies:
+      es-errors: 1.3.0
+      object-inspect: 1.13.4
+      side-channel-list: 1.0.1
+      side-channel-map: 1.0.1
+      side-channel-weakmap: 1.0.2
+
+  side-channel@1.1.1:
     dependencies:
       es-errors: 1.3.0
       object-inspect: 1.13.4

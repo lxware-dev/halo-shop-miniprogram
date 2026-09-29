@@ -46,4 +46,16 @@ page {
   background-color: #f5f5f5;
   font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
 }
+
+.order-hero-info {
+  background-color: #1978e5;
+}
+
+.order-hero-warning {
+  background-color: #b45309;
+}
+
+.order-hero-danger {
+  background-color: #dc2626;
+}
 </style>

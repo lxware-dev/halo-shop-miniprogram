@@ -15,6 +15,7 @@ import {
 } from '@halo-dev/api-client';
 import type { PageResponse } from '@/types/api';
 import { createdOrdersMap } from './checkout.mock';
+import { MOCK_VIRTUAL_VARIANT_ID } from '@/mock/data/virtual-product';
 
 function generateShippingAddress(): OrderShippingAddress {
   return {
@@ -135,6 +136,80 @@ function requiresShipping(order: OrderResponse): boolean {
  */
 const HISTORICAL_ORDERS = Array.from({ length: 15 }, (_, i) => generateOrder(i + 1));
 
+const VIRTUAL_ITEM: OrderItemResponse = {
+  productId: 901,
+  productVariantId: 9011,
+  itemTitle: '数字设计素材包',
+  itemImageUrl: faker.image.urlPicsumPhotos({ width: 200, height: 200 }),
+  unitPrice: 59,
+  quantity: 2,
+  fulfilledQuantity: 2,
+  refundedQuantity: 0,
+  productVariantSnapshot: {
+    productVariantId: 9011,
+    shippingRequired: false,
+    specValues: [],
+  },
+};
+
+const SHIPPING_ITEM: OrderItemResponse = {
+  productId: 902,
+  productVariantId: 9021,
+  itemTitle: '示例实物商品',
+  unitPrice: 120,
+  quantity: 2,
+  fulfilledQuantity: 2,
+  refundedQuantity: 0,
+  productVariantSnapshot: { productVariantId: 9021, shippingRequired: true },
+};
+
+const VIRTUAL_ORDERS: OrderResponse[] = [
+  {
+    orderCode: 'MOCK-VIRTUAL-COMPLETE',
+    status: 'OPEN',
+    paymentStatus: 'PAID',
+    fulfillmentStatus: 'FULFILLED',
+    refundStatus: 'NONE',
+    totalAmount: 118,
+    items: [VIRTUAL_ITEM],
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  },
+  {
+    orderCode: 'MOCK-VIRTUAL-PROCESSING',
+    status: 'OPEN',
+    paymentStatus: 'PAID',
+    fulfillmentStatus: 'PROCESSING',
+    refundStatus: 'NONE',
+    totalAmount: 59,
+    items: [{ ...VIRTUAL_ITEM, quantity: 1, fulfilledQuantity: 0 }],
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  },
+  {
+    orderCode: 'MOCK-VIRTUAL-UNPAID',
+    status: 'OPEN',
+    paymentStatus: 'PENDING',
+    fulfillmentStatus: 'PENDING',
+    refundStatus: 'NONE',
+    totalAmount: 59,
+    items: [{ ...VIRTUAL_ITEM, quantity: 1, fulfilledQuantity: 0 }],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    orderCode: 'MOCK-SPLIT-SHIPPING',
+    status: 'OPEN',
+    paymentStatus: 'PAID',
+    fulfillmentStatus: 'FULFILLED',
+    refundStatus: 'NONE',
+    totalAmount: 240,
+    items: [SHIPPING_ITEM],
+    shippingAddress: generateShippingAddress(),
+    createdAt: new Date().toISOString(),
+    paidAt: new Date().toISOString(),
+  },
+];
+
 function getAllOrders(): OrderResponse[] {
   const newOrders: OrderResponse[] = Array.from(createdOrdersMap.values(), (mock) => {
     const customer: CustomerResponse = {
@@ -158,27 +233,35 @@ function getAllOrders(): OrderResponse[] {
         specValues: item.productVariant?.specValues ?? [],
         shippingRequired: item.productVariant?.shippingRequired ?? true,
       },
-      fulfilledQuantity: 0,
+      fulfilledQuantity:
+        mock.paidAt && item.productVariant?.shippingRequired === false ? item.quantity : 0,
       refundedQuantity: 0,
     }));
 
     return {
       orderCode: mock.orderCode,
       status: 'OPEN',
-      paymentStatus: 'PENDING',
-      fulfillmentStatus: 'PENDING',
+      paymentStatus: mock.paidAt ? 'PAID' : 'PENDING',
+      fulfillmentStatus: mock.paidAt
+        ? items.some((item) => item.productVariantSnapshot?.shippingRequired)
+          ? 'PROCESSING'
+          : 'FULFILLED'
+        : 'PENDING',
       refundStatus: 'NONE',
       totalAmount: mock.payableAmount,
       items,
-      shippingAddress: generateShippingAddress(),
+      shippingAddress: items.some((item) => item.productVariantSnapshot?.shippingRequired)
+        ? generateShippingAddress()
+        : undefined,
       customer,
       createdAt: mock.createdAt,
-      updatedAt: mock.createdAt,
+      updatedAt: mock.paidAt ?? mock.createdAt,
+      paidAt: mock.paidAt,
     };
   });
 
   // Latest orders appear first
-  return [...newOrders.reverse(), ...HISTORICAL_ORDERS];
+  return [...newOrders.reverse(), ...VIRTUAL_ORDERS, ...HISTORICAL_ORDERS];
 }
 
 /**
@@ -243,6 +326,122 @@ export default defineMock({
    * GET /apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/fulfillments
    */
   '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/fulfillments': ({ params }) => {
+    const created = createdOrdersMap.get(params.orderCode);
+    if (
+      created?.paidAt &&
+      created.items.some((item) => item.productVariant?.id === MOCK_VIRTUAL_VARIANT_ID)
+    ) {
+      const virtualItems =
+        getAllOrders()
+          .find((order) => order.orderCode === params.orderCode)
+          ?.items?.filter((item) => item.productVariantId === MOCK_VIRTUAL_VARIANT_ID) ?? [];
+      return [
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Completed,
+          completedAt: created.paidAt,
+          items: virtualItems.map((orderItem) => ({
+            orderItem,
+            quantity: orderItem.quantity,
+            instructions: '复制卡密后，在商品说明中的激活页面兑换。',
+            cdks: Array.from({ length: orderItem.quantity ?? 1 }, (_, index) => ({
+              code: `MOCK-${params.orderCode}-${index + 1}`,
+              secret: 'MOCK-SECRET',
+              status: 'SOLD' as const,
+            })),
+            digitalResources: [
+              {
+                publicId: `mock-resource-${params.orderCode}`,
+                resourceName: '在线资源链接',
+                resourceType: 'STATIC_URL' as const,
+                resourceUrl: 'https://example.com/',
+              },
+            ],
+          })),
+        },
+      ] satisfies FulfillmentUcResponse[];
+    }
+    if (params.orderCode === 'MOCK-SPLIT-SHIPPING') {
+      return [
+        {
+          type: FulfillmentUcResponseTypeEnum.Shipping,
+          status: FulfillmentUcResponseStatusEnum.Shipped,
+          items: [{ orderItem: SHIPPING_ITEM, quantity: 1 }],
+          labels: [{ carrier: '顺丰速运', trackingNumber: 'SF1234567890' }],
+        },
+        {
+          type: FulfillmentUcResponseTypeEnum.Shipping,
+          status: FulfillmentUcResponseStatusEnum.Shipped,
+          items: [{ orderItem: SHIPPING_ITEM, quantity: 1 }],
+          labels: [{ carrier: '中通快递', trackingNumber: 'ZT1234567890' }],
+        },
+      ] satisfies FulfillmentUcResponse[];
+    }
+    if (params.orderCode === 'MOCK-VIRTUAL-COMPLETE') {
+      const repeatedCard = {
+        code: 'HALO-DIGITAL-001',
+        secret: 'DEMO-SECRET-001',
+        status: 'SOLD' as const,
+      };
+      return [
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Completed,
+          completedAt: new Date().toISOString(),
+          items: [
+            {
+              orderItem: VIRTUAL_ITEM,
+              quantity: 1,
+              instructions: '复制卡密后，在商品说明中的激活页面兑换。',
+              cdks: [repeatedCard],
+            },
+          ],
+        },
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Completed,
+          completedAt: new Date().toISOString(),
+          items: [
+            {
+              orderItem: VIRTUAL_ITEM,
+              quantity: 1,
+              instructions: '第二份资源已交付。',
+              cdks: [
+                repeatedCard,
+                { code: 'HALO-DIGITAL-002', secret: 'DEMO-SECRET-002', status: 'SOLD' },
+              ],
+              digitalResources: [
+                {
+                  publicId: 'mock-digital-file-001',
+                  resourceName: '设计素材包.pdf',
+                  resourceType: 'ATTACHMENT',
+                },
+                {
+                  publicId: 'mock-digital-link-001',
+                  resourceName: '在线资源链接',
+                  resourceType: 'STATIC_URL',
+                  resourceUrl: 'https://example.com/downloads/design-kit',
+                },
+              ],
+            },
+          ],
+        },
+      ] satisfies FulfillmentUcResponse[];
+    }
+    if (params.orderCode === 'MOCK-VIRTUAL-PROCESSING') {
+      return [
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Failed,
+          items: [{ orderItem: VIRTUAL_ITEM, quantity: 1 }],
+        },
+        {
+          type: FulfillmentUcResponseTypeEnum.Virtual,
+          status: FulfillmentUcResponseStatusEnum.Processing,
+          items: [{ orderItem: VIRTUAL_ITEM, quantity: 1 }],
+        },
+      ] satisfies FulfillmentUcResponse[];
+    }
     const all = getAllOrders();
     const order = all.find((o) => o.orderCode === params.orderCode);
     // Non-physical or unpaid orders have no fulfillment info
@@ -272,12 +471,12 @@ export default defineMock({
     return [
       {
         enabled: true,
-        icon: 'string',
-        id: 0,
-        name: 'string',
+        icon: 'logo-wechatpay',
+        id: 1,
+        name: '微信支付',
         provider: 'WECHAT_PAY',
-        providerDisplayName: 'string',
-        providerIconUrl: 'string',
+        providerDisplayName: '微信支付',
+        providerIconUrl: '',
         scene: 'MINI_PROGRAM',
       },
     ] satisfies PaymentMethodPublicResponse[];
@@ -292,7 +491,12 @@ export default defineMock({
     params,
   }) => {
     const sessionCode = `pay_${params.orderCode}_${faker.string.alphanumeric(16)}`;
-    const finalStatus = faker.helpers.arrayElement(['SUCCESS', 'FAILED'] as const);
+    const created = createdOrdersMap.get(params.orderCode);
+    const finalStatus = created?.items.some(
+      (item) => item.productVariant?.id === MOCK_VIRTUAL_VARIANT_ID,
+    )
+      ? 'SUCCESS'
+      : faker.helpers.arrayElement(['SUCCESS', 'FAILED'] as const);
     sessionStatusMap.set(sessionCode, { status: 'PENDING', queryCount: 0, finalStatus });
     const prepayId = `mock_prepay_${faker.string.alphanumeric(20)}`;
 
@@ -344,6 +548,13 @@ export default defineMock({
     session.queryCount += 1;
     if (session.queryCount >= 2) {
       session.status = session.finalStatus;
+      if (session.status === 'SUCCESS') {
+        const orderCode = params.sessionCode.split('_')[1];
+        const created = createdOrdersMap.get(orderCode);
+        if (created && !created.paidAt) {
+          created.paidAt = new Date().toISOString();
+        }
+      }
     }
     return session.status;
   },
