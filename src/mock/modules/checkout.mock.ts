@@ -10,6 +10,12 @@ import type {
   PrepareCheckoutRequest,
   UserAddressUpsertRequest,
 } from '@halo-dev/api-client';
+import {
+  MOCK_VIRTUAL_VARIANT_ID,
+  mockVirtualProduct,
+  mockVirtualVariant,
+} from '@/mock/data/virtual-product';
+import { getMockCartItemById } from './cart.mock';
 
 /**
  * New orders created after checkout submission are stored in this map and read by order.mock.ts
@@ -27,6 +33,7 @@ export interface MockCreatedOrder {
   selectedAddressId?: number;
   customerNotes?: string;
   createdAt: string;
+  paidAt?: string;
 }
 
 export const createdOrdersMap = new Map<string, MockCreatedOrder>();
@@ -51,6 +58,20 @@ function generateCheckoutContext(
 ): CheckoutContextResponse {
   const itemCount = Math.max(sourceItems?.length ?? 0, 1);
   const items: CheckoutItemWithCartId[] = Array.from({ length: itemCount }, (_, i) => {
+    const sourceItem = sourceItems?.[i];
+    const cartItem = source === 'CART' ? getMockCartItemById(sourceItem?.cartItemId) : undefined;
+    if (
+      sourceItem?.productVariantId === MOCK_VIRTUAL_VARIANT_ID ||
+      cartItem?.productVariantId === MOCK_VIRTUAL_VARIANT_ID
+    ) {
+      return {
+        cartItemId: sourceItem?.cartItemId,
+        quantity: sourceItem?.quantity ?? cartItem?.quantity ?? 1,
+        price: mockVirtualVariant.price,
+        product: mockVirtualProduct,
+        productVariant: mockVirtualVariant,
+      };
+    }
     const price = Number(faker.commerce.price({ min: 29.9, max: 599 }));
     const item: CheckoutItemWithCartId = {
       quantity: faker.number.int({ min: 1, max: 3 }),
@@ -109,7 +130,8 @@ function generateCheckoutContext(
     0,
   );
   // Free shipping for orders over 99 yuan
-  const shippingFee = saleTotalAmount >= 99 ? 0 : 10;
+  const isShippingRequired = items.some((item) => item.productVariant?.shippingRequired !== false);
+  const shippingFee = !isShippingRequired || saleTotalAmount >= 99 ? 0 : 10;
   const totalDiscountAmount = Number((originalTotalAmount - saleTotalAmount).toFixed(2));
   const payableAmount = saleTotalAmount + shippingFee;
 
@@ -163,12 +185,12 @@ function generateCheckoutContext(
 
   return {
     id: contextId,
-    isShippingRequired: true,
+    isShippingRequired,
     items,
     calculateResult,
     availablePaymentMethods: paymentMethods,
     selectedAddressId,
-    userAddress: selectedAddressId ? undefined : generateInlineUserAddress(),
+    userAddress: isShippingRequired && !selectedAddressId ? generateInlineUserAddress() : undefined,
     source: source ?? (contextId.startsWith('buynow_') ? 'BUY_NOW' : 'CART'),
   };
 }

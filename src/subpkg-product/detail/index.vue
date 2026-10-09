@@ -378,7 +378,11 @@ function onBannerChange(e: { detail: { current: number } }) {
       <view class="flex items-center gap-2 mb-4">
         <view class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">
           <text class="text-brand text-xs font-bold tracking-[1rpx]">{{
-            $t('product.freeShipping')
+            $t(
+              selectedVariant?.shippingRequired === false
+                ? 'product.virtualDelivery'
+                : 'product.freeShipping',
+            )
           }}</text>
         </view>
         <view v-if="false" class="flex items-center bg-brand/10 rounded-full px-2 py-1 text-center">

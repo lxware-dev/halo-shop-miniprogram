@@ -5,6 +5,11 @@ import type {
   ProductResponse,
   ProductVariantResponse,
 } from '@halo-dev/api-client';
+import {
+  MOCK_VIRTUAL_VARIANT_ID,
+  mockVirtualProduct,
+  mockVirtualVariant,
+} from '@/mock/data/virtual-product';
 
 function generateCartItem(id: number): CartItemResponse {
   const productId = faker.number.int({ min: 1, max: 50 });
@@ -59,6 +64,10 @@ function generateCartItem(id: number): CartItemResponse {
 // Local mock cart state
 let mockCart: CartItemResponse[] = [generateCartItem(1), generateCartItem(2), generateCartItem(3)];
 
+export function getMockCartItemById(id?: number) {
+  return mockCart.find((item) => item.id === id);
+}
+
 export default defineMock({
   /**
    * Fetch cart list
@@ -86,6 +95,10 @@ export default defineMock({
     const newItem = generateCartItem(mockCart.length + 1);
     newItem.productVariantId = productVariantId;
     newItem.quantity = quantity;
+    if (productVariantId === MOCK_VIRTUAL_VARIANT_ID) {
+      newItem.product = mockVirtualProduct;
+      newItem.productVariant = mockVirtualVariant;
+    }
     mockCart.push(newItem);
     return newItem;
   },
