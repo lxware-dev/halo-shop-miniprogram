@@ -134,6 +134,33 @@ function requiresShipping(order: OrderResponse): boolean {
  * Pre-generated historical orders (fixed list)
  */
 const HISTORICAL_ORDERS = Array.from({ length: 15 }, (_, i) => generateOrder(i + 1));
+const cancelledOrderTimes = new Map<string, string>();
+const paidOrderTimes = new Map<string, string>();
+const CANCELLATION_ORDERS: OrderResponse[] = [
+  {
+    ...generateOrder(101),
+    orderCode: 'MOCK-PENDING-PAYMENT',
+    status: 'OPEN',
+    paymentStatus: 'PENDING',
+    fulfillmentStatus: 'PENDING',
+    paidAt: undefined,
+  },
+  {
+    ...generateOrder(102),
+    orderCode: 'MOCK-AUTHORIZING-PAYMENT',
+    status: 'OPEN',
+    paymentStatus: 'AUTHORIZING',
+    fulfillmentStatus: 'PENDING',
+    paidAt: undefined,
+  },
+  {
+    ...generateOrder(103),
+    orderCode: 'MOCK-PAID',
+    status: 'OPEN',
+    paymentStatus: 'PAID',
+    fulfillmentStatus: 'PENDING',
+  },
+];
 
 function getAllOrders(): OrderResponse[] {
   const newOrders: OrderResponse[] = Array.from(createdOrdersMap.values(), (mock) => {
@@ -178,7 +205,15 @@ function getAllOrders(): OrderResponse[] {
   });
 
   // Latest orders appear first
-  return [...newOrders.reverse(), ...HISTORICAL_ORDERS];
+  return [...newOrders.reverse(), ...CANCELLATION_ORDERS, ...HISTORICAL_ORDERS].map((order) => {
+    const code = order.orderCode ?? '';
+    const cancelledAt = cancelledOrderTimes.get(code);
+    if (cancelledAt) {
+      return { ...order, status: 'CANCELLED', paymentStatus: 'CANCELLED', updatedAt: cancelledAt };
+    }
+    const paidAt = paidOrderTimes.get(code);
+    return paidAt ? { ...order, paymentStatus: 'PAID', paidAt, updatedAt: paidAt } : order;
+  });
 }
 
 /**
@@ -187,7 +222,7 @@ function getAllOrders(): OrderResponse[] {
  */
 const sessionStatusMap = new Map<
   string,
-  { status: string; queryCount: number; finalStatus: 'SUCCESS' | 'FAILED' }
+  { orderCode: string; status: string; queryCount: number; finalStatus: 'SUCCESS' | 'FAILED' }
 >();
 
 export default defineMock({
@@ -236,6 +271,29 @@ export default defineMock({
   '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}': ({ params }) => {
     const all = getAllOrders();
     return all.find((o) => o.orderCode === params.orderCode) ?? all[0];
+  },
+
+  '[POST]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/cancel': ({ params }) => {
+    const order = getAllOrders().find((item) => item.orderCode === params.orderCode);
+    if (!order) {
+      throw Object.assign(new Error('订单不存在'), { status: 400, title: 'Bad Request' });
+    }
+    if (
+      order.status !== 'OPEN' ||
+      (order.paymentStatus !== 'PENDING' && order.paymentStatus !== 'AUTHORIZING')
+    ) {
+      throw Object.assign(new Error('仅未支付的订单可以取消'), {
+        status: 400,
+        title: 'Bad Request',
+      });
+    }
+    cancelledOrderTimes.set(params.orderCode, new Date().toISOString());
+    for (const session of sessionStatusMap.values()) {
+      if (session.orderCode === params.orderCode && session.status === 'PENDING') {
+        session.status = 'CANCELLED';
+      }
+    }
+    return null;
   },
 
   /**
@@ -291,9 +349,22 @@ export default defineMock({
   '[POST]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/initiate-payment': ({
     params,
   }) => {
+    const order = getAllOrders().find((item) => item.orderCode === params.orderCode);
+    if (
+      !order ||
+      order.status !== 'OPEN' ||
+      (order.paymentStatus !== 'PENDING' && order.paymentStatus !== 'AUTHORIZING')
+    ) {
+      throw Object.assign(new Error('当前订单不可支付'), { status: 400, title: 'Bad Request' });
+    }
     const sessionCode = `pay_${params.orderCode}_${faker.string.alphanumeric(16)}`;
     const finalStatus = faker.helpers.arrayElement(['SUCCESS', 'FAILED'] as const);
-    sessionStatusMap.set(sessionCode, { status: 'PENDING', queryCount: 0, finalStatus });
+    sessionStatusMap.set(sessionCode, {
+      orderCode: params.orderCode,
+      status: 'PENDING',
+      queryCount: 0,
+      finalStatus,
+    });
     const prepayId = `mock_prepay_${faker.string.alphanumeric(20)}`;
 
     return {
@@ -341,9 +412,16 @@ export default defineMock({
       return 'SUCCESS';
     }
 
+    if (session.status === 'CANCELLED') {
+      return 'CANCELLED';
+    }
+
     session.queryCount += 1;
     if (session.queryCount >= 2) {
       session.status = session.finalStatus;
+      if (session.status === 'SUCCESS' && !paidOrderTimes.has(session.orderCode)) {
+        paidOrderTimes.set(session.orderCode, new Date().toISOString());
+      }
     }
     return session.status;
   },

@@ -8,11 +8,13 @@ import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { useCart } from '@/hooks/useCart';
+import { useOrderCancellation } from '@/composables/useOrderCancellation';
 import { sendRequest, useAsyncQuery } from '@/hooks/useRequest';
 import { formatCurrency, maskPhone, joinName, formatDate } from '@/utils/format';
 import {
   getOrderStatusInfo,
   canPayNow,
+  canCancelOrder,
   canViewLogistics,
   canConfirmReceive,
   canBuyAgain,
@@ -139,10 +141,41 @@ function getItemSpecText(item: OrderItemResponse): string {
 const showPayNow = computed(() => !!order.value && canPayNow(order.value));
 const showConfirmReceive = computed(() => !!order.value && canConfirmReceive(order.value));
 const showViewLogistics = computed(() => !!order.value && canViewLogistics(order.value));
-// const showCancelOrder = computed(() => !!order.value && canCancelOrder(order.value));
+const showCancelOrder = computed(() => !!order.value && canCancelOrder(order.value));
 const showBuyAgain = computed(() => !!order.value && canBuyAgain(order.value));
+const hasBottomActions = computed(
+  () =>
+    showPayNow.value ||
+    showCancelOrder.value ||
+    showViewLogistics.value ||
+    showConfirmReceive.value ||
+    showBuyAgain.value,
+);
+
+const {
+  submitting: cancelling,
+  busy: cancellationBusy,
+  cancel,
+} = useOrderCancellation({
+  onCancelled(code) {
+    if (detailData.value?.orderData.orderCode === code) {
+      detailData.value = {
+        ...detailData.value,
+        orderData: {
+          ...detailData.value.orderData,
+          status: 'CANCELLED',
+          paymentStatus: 'CANCELLED',
+        },
+      };
+    }
+  },
+  refresh: () => runOrderDetail({ orderCode: orderCode.value }),
+});
 
 function onPayNow() {
+  if (cancellationBusy.value || !order.value || !canPayNow(order.value)) {
+    return;
+  }
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${orderCode.value}` });
 }
 
@@ -168,17 +201,11 @@ function onViewLogistics() {
   uni.navigateTo({ url: `/subpkg-trade/logistics/index?orderCode=${orderCode.value}` });
 }
 
-// function onCancelOrder() {
-//   uni.showModal({
-//     title: t('order.cancelTitle'),
-//     content: t('order.cancelContent'),
-//     success: (res) => {
-//       if (res.confirm) {
-//         uni.showToast({ title: t('order.cancelUnavailable'), icon: 'none' });
-//       }
-//     },
-//   });
-// }
+function onCancelOrder() {
+  if (order.value) {
+    void cancel(order.value);
+  }
+}
 
 const { addOrderItemsToCart, goToCart } = useCart();
 const buyingAgain = ref(false);
@@ -444,21 +471,24 @@ function onCopyOrderCode() {
   </view>
 
   <view
-    v-if="order"
+    v-if="order && hasBottomActions"
     class="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-end gap-3 px-4 pt-4 bg-white/90 border-t border-t-solid border-t-brand/10 shadow-up backdrop-blur-md pb-safe-sm"
   >
-    <!-- TODO: cancel order action -->
-    <!-- <view
+    <view
       v-if="showCancelOrder"
       class="px-4 py-2.5 rounded-1.5 border border-solid border-slate-200"
+      :class="{ 'opacity-60': cancellationBusy }"
       @tap="onCancelOrder"
     >
-      <text class="text-sm text-slate-500 font-medium">{{ $t('order.cancel') }}</text>
-    </view> -->
+      <text class="text-sm text-slate-500 font-medium">
+        {{ cancelling ? $t('order.cancelling') : $t('order.cancel') }}
+      </text>
+    </view>
 
     <view
       v-if="showPayNow"
       class="px-6 py-2.5 rounded-1.5 bg-brand shadow-brand-btn"
+      :class="{ 'opacity-60': cancellationBusy }"
       @tap="onPayNow"
     >
       <text class="text-sm text-white font-medium">{{ $t('order.payNow') }}</text>

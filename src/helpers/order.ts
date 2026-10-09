@@ -215,7 +215,10 @@ export function canPayNow(order: OrderResponse): boolean {
  * Whether to show the "Cancel Order" button
  */
 export function canCancelOrder(order: OrderResponse): boolean {
-  return order.paymentStatus === 'PENDING' && order.status === 'OPEN';
+  return (
+    order.status === 'OPEN' &&
+    (order.paymentStatus === 'PENDING' || order.paymentStatus === 'AUTHORIZING')
+  );
 }
 
 /**

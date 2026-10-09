@@ -63,6 +63,14 @@ export const orderApi = {
   markAsReceived: (orderCode: string) =>
     api.Post(`/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/${orderCode}/mark-as-received`, {}),
 
+  /** Cancel an open, unpaid order for the current user. */
+  cancelOrder: (orderCode: string) =>
+    api.Post(
+      `/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/${encodeURIComponent(orderCode)}/cancel`,
+      {},
+      { meta: { rejectNotFound: true } },
+    ),
+
   /**
    * Query payment session status
    */

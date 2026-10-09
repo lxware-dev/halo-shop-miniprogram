@@ -26,6 +26,7 @@ interface RequestMethodLike {
   };
   meta?: {
     skipAuthInit?: boolean;
+    rejectNotFound?: boolean;
   };
   __retriedAfterAuthRefresh?: boolean;
   send: () => Promise<unknown>;
@@ -157,8 +158,12 @@ function handleForbiddenResponse(response: ResponseLike, problem: HaloProblemDet
   return rejectProblem(problem);
 }
 
-function handleUnexpectedStatus(problem: HaloProblemDetail, statusCode: number) {
-  if (statusCode === 404) {
+function handleUnexpectedStatus(
+  problem: HaloProblemDetail,
+  statusCode: number,
+  rejectNotFound = false,
+) {
+  if (statusCode === 404 && !rejectNotFound) {
     return;
   }
 
@@ -187,7 +192,7 @@ async function resolveResponse(response: ResponseLike, method: RequestMethodLike
     return handleForbiddenResponse(response, problem);
   }
 
-  return handleUnexpectedStatus(problem, statusCode);
+  return handleUnexpectedStatus(problem, statusCode, method.meta?.rejectNotFound);
 }
 
 const appConfig = useAppConfig();

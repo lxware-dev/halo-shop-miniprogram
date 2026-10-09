@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad, onReachBottom } from '@dcloudio/uni-app';
+import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppEmpty from '@/components/common/AppEmpty.vue';
@@ -9,6 +9,7 @@ import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { useCart } from '@/hooks/useCart';
+import { useOrderCancellation } from '@/composables/useOrderCancellation';
 import { useInitialLoading } from '@/hooks/useInitialLoading';
 import { usePagePullRefresh } from '@/hooks/usePullRefresh';
 import { sendRequest, useInfiniteQuery } from '@/hooks/useRequest';
@@ -17,6 +18,7 @@ import { getPageResponseHasMore } from '@/utils/page';
 import {
   getOrderStatusInfo,
   canPayNow,
+  canCancelOrder,
   canViewLogistics,
   canConfirmReceive,
   canBuyAgain,
@@ -36,7 +38,7 @@ const TAB_LIST = [
   },
   {
     labelKey: 'order.tab.pendingPayment',
-    paymentStatuses: ['PENDING'],
+    paymentStatuses: ['PENDING', 'AUTHORIZING'],
     fulfillmentStatuses: undefined,
     statuses: ['OPEN'],
   },
@@ -57,6 +59,12 @@ const TAB_LIST = [
     paymentStatuses: undefined,
     fulfillmentStatuses: undefined,
     statuses: ['ARCHIVED'],
+  },
+  {
+    labelKey: 'order.tab.cancelled',
+    paymentStatuses: undefined,
+    fulfillmentStatuses: undefined,
+    statuses: ['CANCELLED'],
   },
 ] as const;
 
@@ -128,13 +136,16 @@ async function refreshOrders() {
 }
 
 onLoad((options) => {
-  // Support jumping to a specific tab via the tab param (0=all, 1=to pay, 2=to ship, 3=to receive, 4=completed)
+  // Tab links: 0=all, 1=to pay, 2=to ship, 3=to receive, 4=completed, 5=cancelled.
   if (options?.tab !== undefined) {
     const idx = Number(options.tab);
     if (idx >= 0 && idx < TAB_LIST.length) {
       activeTab.value = idx;
     }
   }
+});
+
+onShow(() => {
   if (!guardCurrentPageAccess()) {
     return;
   }
@@ -162,19 +173,29 @@ function onGoDetail(order: OrderResponse) {
   uni.navigateTo({ url: `/subpkg-trade/order-detail/index?orderCode=${order.orderCode}` });
 }
 
-// function onCancelOrder(_order: OrderResponse) {
-//   uni.showModal({
-//     title: t('order.cancelTitle'),
-//     content: t('order.cancelContent'),
-//     success: (res) => {
-//       if (res.confirm) {
-//         uni.showToast({ title: t('order.cancelUnavailable'), icon: 'none' });
-//       }
-//     },
-//   });
-// }
+const {
+  pendingOrderCode,
+  submitting: cancelling,
+  busy: cancellationBusy,
+  cancel: onCancelOrder,
+} = useOrderCancellation({
+  onCancelled(code) {
+    orders.value = orders.value.flatMap((order) => {
+      if (order.orderCode !== code) {
+        return [order];
+      }
+      return activeTab.value === 1
+        ? []
+        : [{ ...order, status: 'CANCELLED' as const, paymentStatus: 'CANCELLED' as const }];
+    });
+  },
+  refresh: refreshOrders,
+});
 
 function onPayNow(order: OrderResponse) {
+  if (cancellationBusy.value || !canPayNow(order)) {
+    return;
+  }
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${order.orderCode}` });
 }
 
@@ -234,7 +255,7 @@ async function onBuyAgain(order: OrderResponse) {
   }
 }
 
-// const showCancel = canCancelOrder;
+const showCancel = canCancelOrder;
 const showPayNow = canPayNow;
 const showViewLogistics = canViewLogistics;
 const showConfirmReceive = canConfirmReceive;
@@ -255,26 +276,34 @@ function goShopping() {
 <template>
   <view class="flex flex-col min-h-screen bg-bg-page">
     <view class="bg-white sticky top-0 z-10 border-b border-b-solid border-b-slate-100">
-      <view class="flex items-stretch overflow-x-auto px-2 h-12.5">
-        <view
-          v-for="(tab, idx) in TAB_LIST"
-          :key="tab.labelKey"
-          class="flex flex-col items-center justify-center px-4 shrink-0 relative"
-          @tap="onTabChange(idx)"
-        >
-          <text
-            class="text-sm font-medium"
-            :class="activeTab === idx ? 'text-brand' : 'text-slate-500'"
-          >
-            {{ $t(tab.labelKey) }}
-          </text>
-          <!-- Active underline -->
+      <scroll-view
+        scroll-x
+        :show-scrollbar="false"
+        :scroll-into-view="`order-tab-${activeTab}`"
+        class="whitespace-nowrap"
+      >
+        <view class="inline-flex items-stretch min-w-full box-border px-2 h-12.5">
           <view
-            v-if="activeTab === idx"
-            class="absolute bottom-0 left-1/2 bg-brand rounded-full w-5 h-0.5 -translate-x-1/2"
-          />
+            v-for="(tab, idx) in TAB_LIST"
+            :id="`order-tab-${idx}`"
+            :key="tab.labelKey"
+            class="flex flex-col items-center justify-center px-2.5 shrink-0 grow relative"
+            @tap="onTabChange(idx)"
+          >
+            <text
+              class="text-sm font-medium"
+              :class="activeTab === idx ? 'text-brand' : 'text-slate-500'"
+            >
+              {{ $t(tab.labelKey) }}
+            </text>
+            <!-- Active underline -->
+            <view
+              v-if="activeTab === idx"
+              class="absolute bottom-0 left-1/2 bg-brand rounded-full w-5 h-0.5 -translate-x-1/2"
+            />
+          </view>
         </view>
-      </view>
+      </scroll-view>
     </view>
 
     <view v-if="showInitialOrdersLoading" class="flex flex-col gap-3 px-3 py-3">
@@ -389,18 +418,25 @@ function goShopping() {
           </text>
 
           <view class="flex items-center gap-2">
-            <!-- TODO: cancel order action -->
-            <!-- <view
+            <view
               v-if="showCancel(order)"
-              class="flex items-center py-2 px-3.5 py-1.5 rounded-full border border-solid border-slate-200"
+              class="flex items-center px-3.5 py-2 rounded-full border border-solid border-slate-200"
+              :class="{ 'opacity-60': cancellationBusy }"
               @tap.stop="onCancelOrder(order)"
             >
-              <text class="text-xs text-slate-950">{{ $t('order.cancel') }}</text>
-            </view> -->
+              <text class="text-xs text-slate-950">
+                {{
+                  cancelling && pendingOrderCode === order.orderCode
+                    ? $t('order.cancelling')
+                    : $t('order.cancel')
+                }}
+              </text>
+            </view>
 
             <view
               v-if="showPayNow(order)"
               class="flex items-center py-2 px-4 rounded-full bg-brand shadow-brand-btn"
+              :class="{ 'opacity-60': cancellationBusy }"
               @tap.stop="onPayNow(order)"
             >
               <text class="text-xs text-white font-medium">{{ $t('order.payNow') }}</text>
