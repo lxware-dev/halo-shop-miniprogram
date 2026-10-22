@@ -8,7 +8,6 @@ import addressMock from './modules/address.mock';
 import shopMock from './modules/shop.mock';
 import userMock from './modules/user.mock';
 import notificationMock from './modules/notification.mock';
-import logisticsMock from './modules/logistics.mock';
 
 export default [
   homeMock,
@@ -21,5 +20,4 @@ export default [
   shopMock,
   userMock,
   notificationMock,
-  logisticsMock,
 ];

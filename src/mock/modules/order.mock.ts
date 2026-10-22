@@ -246,17 +246,27 @@ export default defineMock({
     const all = getAllOrders();
     const order = all.find((o) => o.orderCode === params.orderCode);
     // Non-physical or unpaid orders have no fulfillment info
-    if (!order || order.paymentStatus !== 'PAID' || !requiresShipping(order)) {
+    if (
+      !order ||
+      order.paymentStatus !== 'PAID' ||
+      order.fulfillmentStatus === 'PENDING' ||
+      !requiresShipping(order)
+    ) {
       return [];
     }
     return [
       {
-        status: FulfillmentUcResponseStatusEnum.Pending,
+        status: FulfillmentUcResponseStatusEnum.Shipped,
         type: FulfillmentUcResponseTypeEnum.Shipping,
-        items: [],
+        items: (order.items ?? []).map((orderItem) => ({
+          orderItem,
+          quantity: orderItem.quantity,
+        })),
         labels: [
           {
-            trackingNumber: faker.string.alphanumeric(12).toUpperCase(),
+            trackingNumber: `MOCK-${params.orderCode}`,
+            status: 'SHIPPED',
+            shippedAt: order.updatedAt,
             carrier: faker.helpers.arrayElement(['顺丰速运', '中通快递', '圆通速递', '韵达快递']),
           },
         ],

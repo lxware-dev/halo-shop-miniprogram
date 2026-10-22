@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
@@ -8,7 +8,9 @@ import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { useCart } from '@/hooks/useCart';
-import { sendRequest, useAsyncQuery } from '@/hooks/useRequest';
+import { sendRequest } from '@/hooks/useRequest';
+import { useOrderDetailPage } from '@/hooks/useOrderDetailPage';
+import { useUserStore } from '@/store';
 import { formatCurrency, maskPhone, joinName, formatDate } from '@/utils/format';
 import {
   getOrderStatusInfo,
@@ -19,53 +21,58 @@ import {
   getSpecText,
   requiresShipping,
 } from '@/helpers/order';
-import type { OrderResponse, OrderItemResponse, FulfillmentUcResponse } from '@halo-dev/api-client';
+import type { OrderItemResponse, FulfillmentUcResponse } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { findShippingLabel } from '@/helpers/fulfillment';
 
-const orderCode = ref('');
 const { t } = useI18n();
+const userStore = useUserStore();
 const {
+  orderCode,
   data: detailData,
   loading,
   error: loadErrorRaw,
-  run: runOrderDetail,
-} = useAsyncQuery<
-  { orderData: OrderResponse; fulfillData: FulfillmentUcResponse[] },
-  { orderCode: string }
->(
-  async (params) => {
+  confirming,
+  setOrderCode,
+  show,
+  hide,
+  load: retryLoadData,
+  confirmReceive: onConfirmReceive,
+  dispose,
+} = useOrderDetailPage({
+  getAccountKey: () => (userStore.isLoggedIn ? (userStore.profile?.metadata.name ?? null) : null),
+  guardAccess: guardCurrentPageAccess,
+  request: async (code) => {
     const [orderData, fulfillData] = await Promise.all([
-      sendRequest(orderApi.getOrder(params.orderCode)),
-      sendRequest(orderApi.getOrderFulfillments(params.orderCode)).catch(() => []),
+      sendRequest(orderApi.getOrder(code)),
+      sendRequest(orderApi.getOrderFulfillments(code)).catch(() => []),
     ]);
     return { orderData, fulfillData: fulfillData as FulfillmentUcResponse[] };
   },
-  { immediate: false },
-);
+  canConfirm: canConfirmReceive,
+  confirm: () =>
+    new Promise((resolve) => {
+      uni.showModal({
+        title: t('order.confirmReceiveTitle'),
+        content: t('order.confirmReceiveContent'),
+        success: (result) => resolve(!!result.confirm),
+        fail: () => resolve(false),
+      });
+    }),
+  markAsReceived: (code) => sendRequest(orderApi.markAsReceived(code)),
+  onConfirmed: () => uni.showToast({ title: t('order.confirmReceiveSuccess'), icon: 'success' }),
+  onConfirmFailed: () => uni.showToast({ title: t('order.actionFailed'), icon: 'none' }),
+});
 const order = computed(() => detailData.value?.orderData ?? null);
 const fulfillments = computed(() => detailData.value?.fulfillData ?? []);
 const loadError = computed(() => !!loadErrorRaw.value);
 
-onLoad(async (options) => {
-  if (!guardCurrentPageAccess()) {
-    return;
-  }
-  if (options?.orderCode) {
-    orderCode.value = options.orderCode;
-    try {
-      await runOrderDetail({ orderCode: orderCode.value });
-    } catch {
-      // ignore
-    }
-  }
+onLoad((options) => {
+  setOrderCode(options?.orderCode ?? '');
 });
-
-function retryLoadData() {
-  if (!orderCode.value) {
-    return;
-  }
-  runOrderDetail({ orderCode: orderCode.value });
-}
+onShow(show);
+onHide(hide);
+onUnload(dispose);
 
 const statusInfo = computed(() => {
   const orderRaw = order.value;
@@ -78,20 +85,20 @@ const statusInfo = computed(() => {
 const orderRequiresShipping = computed(() => !!order.value && requiresShipping(order.value));
 
 /**
- * Latest logistics update
+ * Shipping label summary
  */
-const latestLogistics = computed(() => {
+const shippingSummary = computed(() => {
   if (!orderRequiresShipping.value || !fulfillments.value.length) {
     return null;
   }
-  const f = fulfillments.value[0];
-  const label = f.labels?.[0];
-  if (!label?.carrier && !label?.trackingNumber) {
+  const label = findShippingLabel(fulfillments.value);
+  if (!label) {
     return null;
   }
   return {
-    carrier: label?.carrier ?? t('order.status.express'),
-    trackingNumber: label?.trackingNumber ?? '',
+    carrier: label.carrier?.trim() || t('order.status.express'),
+    trackingNumber: label.trackingNumber ?? '',
+    shippedAt: label.shippedAt,
   };
 });
 
@@ -144,24 +151,6 @@ const showBuyAgain = computed(() => !!order.value && canBuyAgain(order.value));
 
 function onPayNow() {
   uni.navigateTo({ url: `/subpkg-trade/payment/index?orderCode=${orderCode.value}` });
-}
-
-async function onConfirmReceive() {
-  uni.showModal({
-    title: t('order.confirmReceiveTitle'),
-    content: t('order.confirmReceiveContent'),
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          await sendRequest(orderApi.markAsReceived(orderCode.value));
-          uni.showToast({ title: t('order.confirmReceiveSuccess'), icon: 'success' });
-          await runOrderDetail({ orderCode: orderCode.value });
-        } catch {
-          uni.showToast({ title: t('order.actionFailed'), icon: 'none' });
-        }
-      }
-    },
-  });
 }
 
 function onViewLogistics() {
@@ -266,12 +255,13 @@ function onCopyOrderCode() {
     </view>
 
     <view
-      v-if="latestLogistics"
+      v-if="shippingSummary"
       class="mx-3 mt-3 bg-white rounded-2 p-4 shadow-card border border-solid border-brand/5"
     >
       <view
         class="flex gap-4 items-start pb-4"
         style="border-bottom: 1rpx solid rgba(238, 43, 43, 0.06)"
+        @tap="onViewLogistics"
       >
         <view class="shrink-0 flex items-center justify-center rounded-1.5 w-10 h-10 bg-brand/10">
           <TIcon name="secured" v-bind="{ size: '32rpx', color: ICON_COLOR.brand }" />
@@ -280,12 +270,14 @@ function onCopyOrderCode() {
           <text class="text-sm text-slate-950 font-medium leading-snug">
             {{
               $t('order.shippingProgress', {
-                carrier: latestLogistics.carrier,
-                trackingNumber: latestLogistics.trackingNumber,
+                carrier: shippingSummary.carrier,
+                trackingNumber: shippingSummary.trackingNumber,
               })
             }}
           </text>
-          <text class="text-xs text-slate-500">{{ formatDate(order.updatedAt) }}</text>
+          <text v-if="shippingSummary.shippedAt" class="text-xs text-slate-500">
+            {{ formatDate(shippingSummary.shippedAt) }}
+          </text>
         </view>
         <TIcon name="chevron-right" v-bind="{ size: '24rpx', color: ICON_COLOR.muted }" />
       </view>
@@ -475,6 +467,7 @@ function onCopyOrderCode() {
     <view
       v-if="showConfirmReceive"
       class="px-6 py-2.5 rounded-1.5 bg-brand shadow-brand-btn"
+      :class="{ 'opacity-60': confirming }"
       @tap="onConfirmReceive"
     >
       <text class="text-sm text-white font-medium">{{ $t('order.confirmReceive') }}</text>

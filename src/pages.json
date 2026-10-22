@@ -147,7 +147,8 @@
         {
           "path": "logistics/index",
           "style": {
-            "navigationBarTitleText": "物流详情",
+            "navigationBarTitleText": "发货信息",
+            "enablePullDownRefresh": true,
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
