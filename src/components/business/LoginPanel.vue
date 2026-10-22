@@ -14,8 +14,6 @@ import { authApi } from '@/api';
 import { sendRequest } from '@/hooks/useRequest';
 import type { LoginMethod } from '@/config/types';
 import type { User } from '@halo-dev/api-client';
-import LoginMethodPhoneCode from './login/LoginMethodPhoneCode.vue';
-import LoginMethodEmail from './login/LoginMethodEmail.vue';
 import LoginMethodHaloAccount from './login/LoginMethodHaloAccount.vue';
 
 const props = withDefaults(
@@ -66,18 +64,6 @@ const methodMeta: Record<LoginMethod, MethodMeta> = {
     shortLabel: t('login.phoneQuickShort'),
     icon: 'mobile',
     desc: t('login.phoneQuickDesc'),
-  },
-  phoneCode: {
-    label: t('login.phoneCode'),
-    shortLabel: t('login.phoneCodeShort'),
-    icon: 'mobile',
-    desc: t('login.phoneCodeDesc'),
-  },
-  email: {
-    label: t('login.email'),
-    shortLabel: t('login.email'),
-    icon: 'mail',
-    desc: t('login.emailDesc'),
   },
   haloAccount: {
     label: t('login.haloAccount'),
@@ -455,18 +441,8 @@ const panelClass = props.mode === 'drawer' ? 'rounded-t-5' : 'min-h-screen';
             </text>
           </view>
 
-          <LoginMethodPhoneCode
-            v-if="activeMethod === 'phoneCode'"
-            :agreed="agreed"
-            @success="handleLoginResult"
-          />
-          <LoginMethodEmail
-            v-else-if="activeMethod === 'email'"
-            :agreed="agreed"
-            @success="handleLoginResult"
-          />
           <LoginMethodHaloAccount
-            v-else-if="activeMethod === 'haloAccount'"
+            v-if="activeMethod === 'haloAccount'"
             :agreed="agreed"
             @success="handleLoginResult"
           />

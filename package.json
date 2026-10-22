@@ -36,6 +36,7 @@
     "build:quickapp-webview": "uni build -p quickapp-webview --mode production",
     "build:quickapp-webview-huawei": "uni build -p quickapp-webview-huawei --mode production",
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union --mode production",
+    "test:auth-config": "node --test tests/auth-config.test.mjs",
     "type-check": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

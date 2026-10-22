@@ -3,10 +3,8 @@
  *
  * - `phoneQuick`：手机号一键登录
  * - `haloAccount`：账号密码登录
- * - `phoneCode`：手机号 + 短信验证码登录, 暂不可用
- * - `email`：邮箱 + 验证码登录, 暂不可用
  */
-export type LoginMethod = 'phoneQuick' | 'phoneCode' | 'email' | 'haloAccount';
+export type LoginMethod = 'phoneQuick' | 'haloAccount';
 export type AppLocaleCode = 'zh-CN' | 'en-US';
 
 /**

@@ -24,29 +24,10 @@ export interface LoginResult {
   expiresAt?: string;
 }
 
-/** Phone number + SMS verification code login request */
-export interface PhoneCodeLoginRequest {
-  phone: string;
-  smsCode: string;
-}
-
-/** Email + verification code login request */
-export interface EmailLoginRequest {
-  email: string;
-  code: string;
-}
-
 /** Account/password login request */
 export interface HaloAccountLoginRequest {
   username: string;
   password: string;
-}
-
-/** Send verification code request */
-export interface SendCodeRequest {
-  /** Phone number or email */
-  target: string;
-  type: 'sms' | 'email';
 }
 
 /** Shared props for all login-method components */

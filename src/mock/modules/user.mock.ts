@@ -82,28 +82,10 @@ export default defineMock({
   '[POST]/login/mp/{platform}/phone-quick': () => createMockTokenResult(),
 
   /**
-   * Phone number + SMS verification code login
-   * POST /login/mp/{platform}/phone-code
-   */
-  '[POST]/login/mp/{platform}/phone-code': () => createMockTokenResult(),
-
-  /**
-   * Email + verification code login
-   * POST /login/mp/{platform}/email
-   */
-  '[POST]/login/mp/{platform}/email': () => createMockTokenResult(),
-
-  /**
    * Account/password login
    * POST /login/mp/{platform}/username
    */
   '[POST]/login/mp/{platform}/username': () => createMockTokenResult(),
-
-  /**
-   * Send verification code (SMS or email)
-   * POST /login/send-code
-   */
-  '[POST]/login/send-code': () => null,
 
   /**
    * Update current user info

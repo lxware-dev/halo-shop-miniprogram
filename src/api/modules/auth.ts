@@ -1,11 +1,5 @@
 import { alovaInst } from '@/utils/request';
-import type {
-  LoginResult,
-  PhoneCodeLoginRequest,
-  EmailLoginRequest,
-  HaloAccountLoginRequest,
-  SendCodeRequest,
-} from '@/types/auth';
+import type { LoginResult, HaloAccountLoginRequest } from '@/types/auth';
 import { getPlatform } from '@/helpers/platform';
 
 const api = alovaInst;
@@ -45,26 +39,6 @@ export const authApi = {
     ),
 
   /**
-   * Phone number + SMS verification code login
-   */
-  loginByPhoneCode: (params: PhoneCodeLoginRequest) =>
-    api.Post<LoginResult>(`/login/mp/${platform}/phone-code`, params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }),
-
-  /**
-   * Email + verification code login
-   */
-  loginByEmail: (params: EmailLoginRequest) =>
-    api.Post<LoginResult>(`/login/mp/${platform}/email`, params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }),
-
-  /**
    * Account/password login
    */
   loginByHaloAccount: (params: HaloAccountLoginRequest) =>
@@ -73,9 +47,4 @@ export const authApi = {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     }),
-
-  /**
-   * Send SMS or email verification code
-   */
-  sendCode: (params: SendCodeRequest) => api.Post<void>(`/login/send-code`, params),
 };
