@@ -33,12 +33,20 @@ function generateVariant(
   // Mock some variants as unavailable: about 20% have a non-PUBLISHED status, and about 15% have stock 0
   const statusRoll = faker.number.int({ min: 1, max: 10 });
   const status =
-    statusRoll <= 2 ? faker.helpers.arrayElement(['DRAFT', 'ARCHIVED'] as const) : 'PUBLISHED';
-  const trackInventory = true;
+    productId === 1
+      ? 'PUBLISHED'
+      : statusRoll <= 2
+        ? faker.helpers.arrayElement(['DRAFT', 'ARCHIVED'] as const)
+        : 'PUBLISHED';
+  const trackInventory = !(productId === 1 && index === 1);
   const stock =
-    status === 'PUBLISHED' && faker.number.int({ min: 1, max: 10 }) <= 2
-      ? 0
-      : faker.number.int({ min: 1, max: 500 });
+    productId === 1
+      ? index === 1
+        ? 0
+        : 20
+      : status === 'PUBLISHED' && faker.number.int({ min: 1, max: 10 }) <= 2
+        ? 0
+        : faker.number.int({ min: 1, max: 500 });
 
   return {
     id: productId * 10 + index,
@@ -50,6 +58,8 @@ function generateVariant(
     ),
     stock,
     trackInventory,
+    maxPerOrder: productId === 1 ? (index === 1 ? 3 : 1) : undefined,
+    maxPerUser: productId === 1 ? 5 : undefined,
     shippingRequired: true,
     status,
     imageUrl: faker.image.urlPicsumPhotos({ width: 400, height: 400 }),
@@ -75,8 +85,8 @@ function generateProductContent(): string {
 function generateProduct(id: number): ProductResponse {
   const category = faker.helpers.arrayElement(TOP_CATEGORIES);
   // Randomly select some colors and sizes to build a complete color x size spec matrix
-  const usedColors = faker.helpers.arrayElements(COLORS, { min: 2, max: 3 });
-  const usedSizes = faker.helpers.arrayElements(SIZES, { min: 2, max: 3 });
+  const usedColors = id === 1 ? ['黑色'] : faker.helpers.arrayElements(COLORS, { min: 2, max: 3 });
+  const usedSizes = id === 1 ? ['S', 'L'] : faker.helpers.arrayElements(SIZES, { min: 2, max: 3 });
   const variants: ProductVariantResponse[] = [];
   let variantIndex = 1;
   for (const color of usedColors) {
@@ -89,7 +99,7 @@ function generateProduct(id: number): ProductResponse {
 
   return {
     id,
-    title: faker.commerce.productName(),
+    title: id === 1 ? '限购演示商品' : faker.commerce.productName(),
     description: faker.commerce.productDescription(),
     coverImageUrl: faker.image.urlPicsumPhotos({ width: 600, height: 600 }),
     images: [1, 2, 3].map(() => faker.image.urlPicsumPhotos({ width: 600, height: 600 })),
@@ -126,6 +136,16 @@ function generateProduct(id: number): ProductResponse {
 const PRODUCT_POOL: ProductResponse[] = Array.from({ length: 100 }, (_, i) =>
   generateProduct(i + 1),
 );
+
+export function findMockProductVariant(variantId: number) {
+  for (const product of PRODUCT_POOL) {
+    const variant = product.productVariants?.find((item) => item.id === variantId);
+    if (variant) {
+      return { product, variant };
+    }
+  }
+  return undefined;
+}
 
 export default defineMock({
   /**
@@ -204,7 +224,7 @@ export default defineMock({
    */
   '[GET]/apis/mp.api.ecommerce.halo.run/v1alpha1/products/{id}': ({ params }) => {
     const id = Number(params.id);
-    return generateProduct(id);
+    return id === 1 ? PRODUCT_POOL[0] : generateProduct(id);
   },
 
   /**
@@ -213,6 +233,9 @@ export default defineMock({
    */
   '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/products/{productId}/variants': ({ params }) => {
     const productId = Number(params.productId);
+    if (productId === 1) {
+      return PRODUCT_POOL[0].productVariants;
+    }
     const usedColors = faker.helpers.arrayElements(COLORS, { min: 2, max: 3 });
     const usedSizes = faker.helpers.arrayElements(SIZES, { min: 2, max: 3 });
     const variants: ProductVariantResponse[] = [];

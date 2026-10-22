@@ -66,6 +66,10 @@ const zhCN = {
   'product.customerService': '客服',
   'product.cart': '购物车',
 
+  'sku.perOrderLimit': defineNamedMessage((named) => `每单限购 ${named('count')} 件`),
+  'sku.perUserLimit': defineNamedMessage((named) => `每人累计限购 ${named('count')} 件`),
+  'sku.unavailable': '当前规格暂不可购买',
+  'sku.quantityLimit': defineNamedMessage((named) => `购买数量最多为 ${named('max')} 件`),
   'sku.stock': defineNamedMessage((named) => `库存 ${named('stock')} 件`),
   'sku.selected': defineNamedMessage((named) => `已选：${named('text')}`),
   'sku.quantity': '购买数量',

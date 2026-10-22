@@ -1,5 +1,6 @@
 import { defineMock } from '@alova/mock';
 import { faker } from '@faker-js/faker/locale/zh_CN';
+import { findMockProductVariant } from './product.mock';
 import type {
   CartItemResponse,
   ProductResponse,
@@ -7,6 +8,19 @@ import type {
 } from '@halo-dev/api-client';
 
 function generateCartItem(id: number): CartItemResponse {
+  if (id === 1) {
+    const demo = findMockProductVariant(11)!;
+    return {
+      id,
+      customerId: 1,
+      productVariantId: 11,
+      quantity: 1,
+      product: demo.product,
+      productVariant: demo.variant,
+      maxPerOrder: demo.variant.maxPerOrder,
+      maxPerUser: demo.variant.maxPerUser,
+    };
+  }
   const productId = faker.number.int({ min: 1, max: 50 });
   const variantId = productId * 10 + 1;
   const price = Number(faker.commerce.price({ min: 19.9, max: 999 }));
@@ -59,6 +73,20 @@ function generateCartItem(id: number): CartItemResponse {
 // Local mock cart state
 let mockCart: CartItemResponse[] = [generateCartItem(1), generateCartItem(2), generateCartItem(3)];
 
+function validateCartQuantity(quantity: number, maximum?: number) {
+  if (
+    !Number.isInteger(quantity) ||
+    quantity < 1 ||
+    quantity > 999 ||
+    (maximum != null && quantity > maximum)
+  ) {
+    throw Object.assign(new Error('Cart quantity exceeds the purchase limit'), {
+      status: 400,
+      title: 'Bad Request',
+    });
+  }
+}
+
 export default defineMock({
   /**
    * Fetch cart list
@@ -78,14 +106,23 @@ export default defineMock({
     if (productVariantId % 7 === 0) {
       throw Object.assign(new Error('商品已售罄'), { status: 422, title: 'Unprocessable' });
     }
+    const definition = findMockProductVariant(productVariantId);
     const existing = mockCart.find((item) => item.productVariantId === productVariantId);
+    const mergedQuantity = (existing?.quantity ?? 0) + quantity;
+    validateCartQuantity(mergedQuantity, definition?.variant.maxPerOrder ?? existing?.maxPerOrder);
     if (existing) {
-      existing.quantity = (existing.quantity ?? 0) + quantity;
+      existing.quantity = mergedQuantity;
       return existing;
     }
     const newItem = generateCartItem(mockCart.length + 1);
     newItem.productVariantId = productVariantId;
     newItem.quantity = quantity;
+    if (definition) {
+      newItem.product = definition.product;
+      newItem.productVariant = definition.variant;
+      newItem.maxPerOrder = definition.variant.maxPerOrder;
+      newItem.maxPerUser = definition.variant.maxPerUser;
+    }
     mockCart.push(newItem);
     return newItem;
   },
@@ -99,6 +136,7 @@ export default defineMock({
     const { quantity } = data as { quantity: number };
     const item = mockCart.find((i) => i.id === id);
     if (item) {
+      validateCartQuantity(quantity, item.maxPerOrder ?? item.productVariant?.maxPerOrder);
       item.quantity = quantity;
       return item;
     }

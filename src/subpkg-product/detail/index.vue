@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { clampQuantity, getQuantityLimit, isQuantityAllowed } from '@/helpers/quantity';
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
@@ -74,9 +75,7 @@ const selectedVariant = computed<ProductVariantResponse | null>(() => {
       return v.specValues.every((sv) => {
         return selectedSpecs.value[sv.name ?? ''] === sv.value;
       });
-    }) ??
-    variants[0] ??
-    null
+    }) ?? null
   );
 });
 
@@ -104,16 +103,13 @@ const originalPrice = computed(() => {
  * Determine whether a variant is purchasable:
  * 1. It must exist in the productVariants list
  * 2. status must be PUBLISHED
- * 3. When trackInventory is true, stock must be > 0
+ * 3. When inventory is tracked, stock must allow at least one item
  */
 function isVariantAvailable(variant: ProductVariantResponse): boolean {
   if (variant.status !== 'PUBLISHED') {
     return false;
   }
-  if (variant.trackInventory && (variant.stock ?? 0) <= 0) {
-    return false;
-  }
-  return true;
+  return variant.trackInventory !== true || (variant.stock ?? 0) > 0;
 }
 
 /**
@@ -235,6 +231,16 @@ const selectedSpecText = computed(() => {
 
 const showSpecPanel = ref(false);
 const quantity = ref(1);
+const quantityLimit = computed(() => getQuantityLimit(selectedVariant.value));
+watch(
+  quantityLimit,
+  (maximum) => {
+    if (selectedVariant.value) {
+      quantity.value = clampQuantity(quantity.value, maximum);
+    }
+  },
+  { flush: 'sync' },
+);
 const isExternalProduct = computed(() => checkIsExternalProduct(product.value));
 
 async function loadProduct() {
@@ -273,6 +279,18 @@ const { requireAuth } = useAuth();
 const { addToCart, totalCount, goToCart } = useCart();
 const addingToCart = ref(false);
 
+function validatePurchaseQuantity(maximum = quantityLimit.value) {
+  if (!selectedVariant.value || !isVariantAvailable(selectedVariant.value)) {
+    uni.showToast({ title: t('sku.unavailable'), icon: 'none' });
+    return false;
+  }
+  if (!isQuantityAllowed(quantity.value, maximum)) {
+    uni.showToast({ title: t('sku.quantityLimit', { max: maximum }), icon: 'none' });
+    return false;
+  }
+  return true;
+}
+
 async function handleAddToCart() {
   if (isExternalProduct.value) {
     openExternalProduct(product.value);
@@ -283,6 +301,9 @@ async function handleAddToCart() {
   }
   if (!selectedVariant.value?.id) {
     uni.showToast({ title: t('product.chooseSpec'), icon: 'none' });
+    return;
+  }
+  if (!validatePurchaseQuantity(Math.min(quantityLimit.value, 999))) {
     return;
   }
   addingToCart.value = true;
@@ -301,6 +322,9 @@ function handleBuyNow() {
   }
   if (!selectedVariant.value?.id) {
     uni.showToast({ title: t('product.chooseSpec'), icon: 'none' });
+    return;
+  }
+  if (!validatePurchaseQuantity()) {
     return;
   }
   const targetUrl = `/subpkg-trade/confirm/index?variantId=${selectedVariant.value.id}&quantity=${quantity.value}`;
@@ -444,6 +468,8 @@ function onBannerChange(e: { detail: { current: number } }) {
       :price="displayPrice"
       :stock="selectedVariant?.stock ?? -1"
       :track-inventory="selectedVariant?.trackInventory ?? false"
+      :max-per-order="selectedVariant?.maxPerOrder"
+      :max-per-user="selectedVariant?.maxPerUser"
       :selected-text="selectedSpecText"
       :spec-definition="product.specDefinition ?? []"
       :selected-specs="selectedSpecs"
@@ -455,13 +481,14 @@ function onBannerChange(e: { detail: { current: number } }) {
       <view class="flex gap-3">
         <view
           class="flex flex-1 items-center justify-center py-3.5 border border-solid border-brand rounded-full"
-          :class="addingToCart ? 'opacity-60' : ''"
+          :class="addingToCart || !selectedVariant || quantityLimit < 1 ? 'opacity-60' : ''"
           @tap="handleAddToCart"
         >
           <text class="text-brand text-base font-bold">{{ $t('product.addToCart') }}</text>
         </view>
         <view
           class="flex flex-1 items-center justify-center py-3.5 bg-brand rounded-full"
+          :class="!selectedVariant || quantityLimit < 1 ? 'opacity-60' : ''"
           @tap="handleBuyNow"
         >
           <text class="text-white text-base font-bold">{{ $t('product.buyNow') }}</text>

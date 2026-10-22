@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, shallowRef, watch } from 'vue';
+import { clampQuantity, getQuantityLimit } from '@/helpers/quantity';
 import { useDrawer } from '@/composables/useDrawer';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import type { SpecDefinitionPayload } from '@halo-dev/api-client';
@@ -32,8 +33,10 @@ const props = withDefaults(
     disabledSpecValues?: Record<string, Set<string>>;
     // quantity
     quantity?: number;
-    // max selectable quantity (defaults to stock; 0 means unlimited)
+    // Optional caller cap; zero leaves it unlimited.
     maxQuantity?: number;
+    maxPerOrder?: number;
+    maxPerUser?: number;
   }>(),
   {
     coverImage: '',
@@ -74,6 +77,10 @@ function selectSpec(specName: string, value: string) {
   if (isDisabled(specName, value)) {
     return;
   }
+  if (isSelected(specName, value)) {
+    emit('update:selectedSpecs', {});
+    return;
+  }
   emit('update:selectedSpecs', { ...props.selectedSpecs, [specName]: value });
 }
 
@@ -99,15 +106,16 @@ const displayCoverImage = computed(
   () => props.coverImage || selectedSpecImage.value || props.fallbackCoverImage,
 );
 
-const effectiveMax = computed(() => {
-  if (props.maxQuantity > 0) {
-    return props.maxQuantity;
-  }
-  if (props.stock != null && props.stock >= 0) {
-    return props.stock;
-  }
-  return 999;
-});
+const effectiveMax = computed(() =>
+  getQuantityLimit(
+    {
+      trackInventory: props.trackInventory,
+      stock: props.stock,
+      maxPerOrder: props.maxPerOrder,
+    },
+    props.maxQuantity > 0 ? props.maxQuantity : 999,
+  ),
+);
 
 function decrement() {
   if (props.quantity <= 1) {
@@ -123,24 +131,40 @@ function increment() {
   emit('update:quantity', props.quantity + 1);
 }
 
-function onQuantityInput(e: any) {
-  const raw = e.detail.value as string;
-  const num = Number.parseInt(raw, 10);
-  if (Number.isNaN(num) || num < 1) {
+const quantityInput = shallowRef(String(props.quantity));
+let inputVersion = 0;
+watch(
+  () => props.quantity,
+  (value) => {
+    inputVersion++;
+    quantityInput.value = String(value);
+  },
+  { flush: 'sync' },
+);
+
+async function updateQuantityInput(raw: string, normalize: boolean) {
+  const version = ++inputVersion;
+  quantityInput.value = raw;
+  if (!normalize) {
     return;
   }
-  const clamped = Math.min(num, effectiveMax.value);
-  emit('update:quantity', clamped);
+  // Commit the native input's raw value before correcting it, even when the model is unchanged.
+  await nextTick();
+  if (version !== inputVersion) {
+    return;
+  }
+  const value = clampQuantity(raw, effectiveMax.value);
+  quantityInput.value = String(value);
+  emit('update:quantity', value);
 }
 
-function onQuantityBlur(e: any) {
-  const raw = e.detail.value as string;
-  const num = Number.parseInt(raw, 10);
-  if (Number.isNaN(num) || num < 1) {
-    emit('update:quantity', 1);
-  } else {
-    emit('update:quantity', Math.min(num, effectiveMax.value));
-  }
+function onQuantityInput(e: { detail: { value: string } }) {
+  const value = Number(e.detail.value);
+  void updateQuantityInput(e.detail.value, Number.isSafeInteger(value) && value >= 1);
+}
+
+function onQuantityBlur(e: { detail: { value: string } }) {
+  void updateQuantityInput(e.detail.value, true);
 }
 </script>
 
@@ -175,6 +199,12 @@ function onQuantityBlur(e: any) {
           </view>
           <text v-if="trackInventory && stock >= 0" class="text-slate-500 text-xs">
             {{ t('sku.stock', { stock }) }}
+          </text>
+          <text v-if="maxPerOrder != null" class="text-slate-500 text-xs">
+            {{ t('sku.perOrderLimit', { count: maxPerOrder }) }}
+          </text>
+          <text v-if="maxPerUser != null" class="text-slate-500 text-xs">
+            {{ t('sku.perUserLimit', { count: maxPerUser }) }}
           </text>
           <text v-if="selectedText" class="text-slate-950 text-xs font-medium">
             {{ t('sku.selected', { text: selectedText }) }}
@@ -222,7 +252,7 @@ function onQuantityBlur(e: any) {
               <view class="w-12 h-10 flex items-center justify-center">
                 <input
                   type="number"
-                  :value="String(quantity)"
+                  :value="quantityInput"
                   class="w-full h-full text-center text-slate-950 text-base font-medium bg-transparent"
                   @input="onQuantityInput"
                   @blur="onQuantityBlur"

@@ -66,6 +66,10 @@ const enUS = {
   'product.customerService': 'Support',
   'product.cart': 'Cart',
 
+  'sku.perOrderLimit': defineNamedMessage((named) => `Limit ${named('count')} per order`),
+  'sku.perUserLimit': defineNamedMessage((named) => `Total limit ${named('count')} per customer`),
+  'sku.unavailable': 'This variant is unavailable',
+  'sku.quantityLimit': defineNamedMessage((named) => `You can buy up to ${named('max')} items`),
   'sku.stock': defineNamedMessage((named) => `Stock ${named('stock')}`),
   'sku.selected': defineNamedMessage((named) => `Selected: ${named('text')}`),
   'sku.quantity': 'Quantity',
