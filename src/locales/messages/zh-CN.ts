@@ -278,13 +278,9 @@ const zhCN = {
   'help.notFound': '未找到相关问题',
   'help.notFoundDesc': '试试更换关键词，或直接联系客服',
 
-  'notification.tab.all': '全部消息',
-  'notification.tab.logistics': '物流通知',
-  'notification.tab.promotion': '活动消息',
-  'notification.recent': '最近消息',
-  'notification.markAllRead': '一键已读',
-  'notification.noMore': '没有更多消息了',
-  'notification.empty': '暂无消息',
+  'notification.title': '消息中心',
+  'notification.unavailable': '消息中心暂未开放',
+  'notification.backToAccount': '返回个人中心',
 
   'address.createTitle': '新增收货地址',
   'address.editTitle': '编辑收货地址',

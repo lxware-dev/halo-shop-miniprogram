@@ -278,13 +278,9 @@ const enUS = {
   'help.notFound': 'No matching questions found',
   'help.notFoundDesc': 'Try another keyword or contact support directly',
 
-  'notification.tab.all': 'All messages',
-  'notification.tab.logistics': 'Shipping updates',
-  'notification.tab.promotion': 'Promotions',
-  'notification.recent': 'Recent messages',
-  'notification.markAllRead': 'Mark all as read',
-  'notification.noMore': 'No more messages',
-  'notification.empty': 'No messages yet',
+  'notification.title': 'Message center',
+  'notification.unavailable': 'Message center is not available yet',
+  'notification.backToAccount': 'Back to account',
 
   'address.createTitle': 'Add shipping address',
   'address.editTitle': 'Edit shipping address',
