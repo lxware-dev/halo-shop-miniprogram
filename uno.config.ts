@@ -62,6 +62,7 @@ export default defineConfig({
     },
   },
   shortcuts: {
+    'toast-wide': 'pointer-events-none !w-max !max-w-[calc(100vw-64rpx)]',
     'pb-safe-sm': 'pb-[calc(32rpx+env(safe-area-inset-bottom))]',
     'pb-safe': 'pb-[calc(64rpx+env(safe-area-inset-bottom))]',
     'pb-safe-xs': 'pb-[calc(34rpx+env(safe-area-inset-bottom))]',

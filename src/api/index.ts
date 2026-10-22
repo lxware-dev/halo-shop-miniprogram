@@ -10,3 +10,5 @@ export { userApi } from './modules/user';
 
 export type { ProductListQuery } from './modules/product';
 export type { OrderListQuery } from './modules/order';
+
+export { couponApi } from './modules/coupon';

@@ -19,6 +19,8 @@ const AUTH_REQUIRED_PAGE_PATHS = new Set([
   '/subpkg-trade/order-detail/index',
   '/subpkg-trade/logistics/index',
   '/subpkg-mine/notification/index',
+  '/subpkg-mine/coupons/index',
+  '/subpkg-mine/coupons/detail',
   '/subpkg-mine/address-list/index',
   '/subpkg-mine/address-edit/index',
   '/subpkg-mine/settings/index',

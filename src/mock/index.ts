@@ -3,6 +3,7 @@ import categoryMock from './modules/category.mock';
 import productMock from './modules/product.mock';
 import cartMock from './modules/cart.mock';
 import checkoutMock from './modules/checkout.mock';
+import couponMock from './modules/coupon.mock';
 import orderMock from './modules/order.mock';
 import addressMock from './modules/address.mock';
 import shopMock from './modules/shop.mock';
@@ -16,6 +17,7 @@ export default [
   productMock,
   cartMock,
   checkoutMock,
+  couponMock,
   orderMock,
   addressMock,
   shopMock,

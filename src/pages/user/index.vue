@@ -62,6 +62,7 @@ const orderTabs = computed(() => [
 
 const menuGroups = computed(() => [
   [
+    { label: t('coupon.title'), icon: 'discount', path: '/subpkg-mine/coupons/index' },
     { label: t('user.address'), icon: 'location', path: '/subpkg-mine/address-list/index' },
     { label: t('user.help'), icon: 'help-circle', path: '/subpkg-mine/help/index' },
     { label: t('user.about'), icon: 'info-circle', path: '/subpkg-mine/about/index' },

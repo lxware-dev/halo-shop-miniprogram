@@ -1,6 +1,21 @@
 import type { OrderResponse, OrderItemResponse } from '@halo-dev/api-client';
 import { translate } from '@/locales';
 
+/** Use persisted order amounts, with fallbacks for older servers. */
+export function getOrderAmounts(order?: OrderResponse | null) {
+  const subtotal =
+    order?.subtotalAmount ??
+    (order?.items ?? []).reduce(
+      (sum, item) => sum + (item.unitPrice ?? 0) * (item.quantity ?? 1),
+      0,
+    );
+  return {
+    subtotal,
+    shipping: order?.shippingAmount ?? Math.max((order?.totalAmount ?? 0) - subtotal, 0),
+    payable: order?.payableAmount ?? order?.totalAmount ?? 0,
+  };
+}
+
 /**
  * Whether the order requires logistics delivery
  * - If any item explicitly requires shipping, the order is considered to require logistics

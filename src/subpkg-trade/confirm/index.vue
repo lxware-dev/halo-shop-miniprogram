@@ -3,16 +3,17 @@ import { ref, computed } from 'vue';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
+import TToast from '@tdesign/uniapp/toast/toast.vue';
+import type { ToastOptionsType } from '@tdesign/uniapp/toast/index.js';
 import { useAppConfig } from '@/config';
 import { checkoutApi } from '@/api/modules/checkout';
 import { guardCurrentPageAccess, navigateToPage } from '@/helpers/auth';
 import { ICON_COLOR } from '@/helpers/icon';
 import { addressApi } from '@/api/modules/address';
-import { sendRequest, useQuery } from '@/hooks/useRequest';
+import { useQuery } from '@/hooks/useRequest';
 import { formatPrice, formatCurrency, maskPhone, joinName, joinAddress } from '@/utils/format';
 import { getSpecText } from '@/helpers/order';
 import type {
-  CheckoutContextResponse,
   CheckoutItemResponse,
   MpCheckoutSubmitRequest,
   PrepareCheckoutRequest,
@@ -20,6 +21,12 @@ import type {
   UserAddressResponse,
 } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import CheckoutPromotions from '@/components/business/coupon/CheckoutPromotions.vue';
+import AppLoadError from '@/components/common/AppLoadError.vue';
+import { useCheckoutPromotions } from '@/composables/useCheckoutPromotions';
+import type { PromotionSelection } from '@/composables/useCheckoutPromotions';
+import { isHaloProblem } from '@/utils/error';
+import { CheckoutSubmissionUncertainError } from '@/helpers/checkout';
 
 // From cart: items=[{ cartItemId, quantity }]
 // From buy now: variantId=10&quantity=2
@@ -31,9 +38,14 @@ interface CheckoutPrepareItemPayload {
 
 const loading = ref(true);
 const submitting = ref(false);
+const submissionUncertain = ref(false);
+const completedOrderCode = ref('');
+const checkoutLocked = computed(
+  () => submitting.value || submissionUncertain.value || Boolean(completedOrderCode.value),
+);
+const promotionToast = ref<{ show: (options: ToastOptionsType) => void } | null>(null);
 const { t } = useI18n();
 const { currencySymbol } = useAppConfig().business;
-const context = ref<CheckoutContextResponse | null>(null);
 const selectedAddress = ref<UserAddressResponse | null>(null);
 const localAddresses = ref<UserAddressResponse[]>([]);
 const contextAddress = ref<UserAddressUpsertRequest | null>(null);
@@ -46,12 +58,22 @@ const { run: runAddressesQuery } = useQuery<UserAddressResponse[], Record<string
     immediate: false,
   },
 );
-const { loading: syncingContext, run: runPrepareCheckout } = useQuery<
-  CheckoutContextResponse,
-  PrepareCheckoutRequest
->((payload) => checkoutApi.prepareCheckout(payload), {
-  immediate: false,
-});
+const {
+  context,
+  syncing: syncingContext,
+  verified: pricingVerified,
+  failed: pricingFailed,
+  error: promotionError,
+  selection: promotionSelection,
+  supported: promotionsSupported,
+  refresh: prepareCheckout,
+  apply: applyPromotions,
+} = useCheckoutPromotions(basePreparePayload, syncAddressByContext);
+
+function parsePositiveId(value: unknown) {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+}
 
 function parseCheckoutItems(raw?: string): CheckoutPrepareItemPayload[] {
   if (!raw) {
@@ -64,9 +86,8 @@ function parseCheckoutItems(raw?: string): CheckoutPrepareItemPayload[] {
     }
     return parsed
       .map((item) => ({
-        cartItemId:
-          item?.cartItemId == null || item.cartItemId === '' ? undefined : Number(item.cartItemId),
-        productVariantId: Number(item?.productVariantId),
+        cartItemId: parsePositiveId(item?.cartItemId),
+        productVariantId: parsePositiveId(item?.productVariantId),
         quantity: Number(item?.quantity ?? 1),
       }))
       .filter(
@@ -95,7 +116,7 @@ onLoad(async (options) => {
       source: 'BUY_NOW',
       items: [
         {
-          productVariantId: Number(options.variantId),
+          productVariantId: parsePositiveId(options.variantId),
           quantity: Number(options.quantity ?? 1),
         },
       ],
@@ -108,7 +129,16 @@ onLoad(async (options) => {
     };
   }
 
-  if (!createPayload || !createPayload.items?.length) {
+  if (
+    !createPayload ||
+    !createPayload.items?.length ||
+    createPayload.items.some(
+      (item) =>
+        !Number.isSafeInteger(item.quantity) ||
+        item.quantity <= 0 ||
+        !(createPayload?.source === 'CART' ? item.cartItemId : item.productVariantId),
+    )
+  ) {
     uni.showToast({ title: t('checkout.invalidParams'), icon: 'none' });
     loading.value = false;
     hasInitialized.value = true;
@@ -132,7 +162,10 @@ onShow(() => {
   if (!guardCurrentPageAccess()) {
     return;
   }
-  if (!hasInitialized.value || loading.value || !basePreparePayload.value) {
+  if (checkoutLocked.value) {
+    return;
+  }
+  if (!hasInitialized.value || loading.value || syncingContext.value || !basePreparePayload.value) {
     return;
   }
   syncLatestSelectedAddress().catch(() => {
@@ -151,7 +184,10 @@ const saleTotalAmount = computed(() => context.value?.calculateResult?.saleTotal
 const shippingFee = computed(() => context.value?.calculateResult?.shippingFeeAmount ?? 0);
 
 const totalDiscountAmount = computed(
-  () => context.value?.calculateResult?.totalDiscountAmount ?? 0,
+  () =>
+    (context.value?.calculateResult?.totalDiscountAmount ?? 0) +
+    (context.value?.calculateResult?.couponDiscountAmount ?? 0) +
+    (context.value?.calculateResult?.discountAmount ?? 0),
 );
 
 const payableAmount = computed(() => context.value?.calculateResult?.payableAmount ?? 0);
@@ -194,19 +230,28 @@ const hasAddress = computed(() => {
 async function loadAddresses() {
   try {
     const addresses = await runAddressesQuery({});
+    if (checkoutLocked.value) {
+      return;
+    }
     if (addresses?.length) {
+      const preferredId = selectedAddress.value?.id ?? context.value?.selectedAddressId;
       localAddresses.value = addresses;
-      selectedAddress.value = addresses.find((a) => a.isDefault) ?? addresses[0];
+      selectedAddress.value =
+        addresses.find((a) => a.id === preferredId) ??
+        addresses.find((a) => a.isDefault) ??
+        addresses[0];
       return;
     }
     localAddresses.value = [];
   } catch {
     // ignore
-    localAddresses.value = [];
+    if (!checkoutLocked.value) {
+      localAddresses.value = [];
+    }
   }
 }
 
-function syncAddressByContext(ctx: CheckoutContextResponse) {
+function syncAddressByContext(ctx: NonNullable<typeof context.value>) {
   contextAddress.value = ctx.userAddress ?? null;
   if (!ctx.selectedAddressId) {
     selectedAddress.value = null;
@@ -221,8 +266,11 @@ function syncAddressByContext(ctx: CheckoutContextResponse) {
 }
 
 async function syncLatestSelectedAddress() {
+  if (checkoutLocked.value) {
+    return;
+  }
   await loadAddresses();
-  if (!isShippingRequired.value) {
+  if (checkoutLocked.value || !isShippingRequired.value) {
     return;
   }
   const preferredAddressId =
@@ -241,25 +289,53 @@ async function syncLatestSelectedAddress() {
 }
 
 async function refreshCheckoutContext(selectedAddressId?: number) {
-  if (!basePreparePayload.value) {
+  if (checkoutLocked.value) {
     return;
   }
-  try {
-    const payload: PrepareCheckoutRequest = {
+  await prepareCheckout(selectedAddressId);
+}
+
+async function updatePromotions(selection: PromotionSelection) {
+  if (checkoutLocked.value || syncingContext.value) {
+    return;
+  }
+  const codeChanged = selection.discountCode?.trim() !== promotionSelection.value.discountCode;
+  const success = await applyPromotions(selection);
+  if (!success) {
+    const problem = promotionError.value;
+    promotionToast.value?.show({
+      message:
+        codeChanged && isHaloProblem(problem) && problem.status === 400
+          ? t('coupon.codeUnavailable')
+          : t('coupon.updateFailed'),
+      placement: 'bottom',
+      duration: 2500,
+    });
+  }
+}
+
+function goSelectCoupons() {
+  if (syncingContext.value || checkoutLocked.value) {
+    return;
+  }
+  const pages = getCurrentPages();
+  const currentPage = pages.at(-1) as any;
+  currentPage.couponCheckout = {
+    payload: {
       ...basePreparePayload.value,
-      selectedAddressId,
-    };
-    const ctx = await runPrepareCheckout(payload);
-    if (!ctx) {
-      return;
-    }
-    context.value = ctx;
-    syncAddressByContext(ctx);
-  } catch {}
+      selectedAddressId: selectedAddress.value?.id ?? context.value?.selectedAddressId,
+    },
+    context: context.value,
+    selection: promotionSelection.value,
+  };
+  currentPage.onCouponsSelected = (ids: number[]) => {
+    void updatePromotions({ ...promotionSelection.value, customerCouponIds: ids });
+  };
+  navigateToPage('/subpkg-mine/coupons/index?mode=select');
 }
 
 function goSelectAddress() {
-  if (!isShippingRequired.value) {
+  if (checkoutLocked.value || syncingContext.value || !isShippingRequired.value) {
     return;
   }
   const pages = getCurrentPages();
@@ -277,6 +353,9 @@ function goSelectAddress() {
 }
 
 async function applySelectedAddress(address: UserAddressResponse) {
+  if (checkoutLocked.value) {
+    return;
+  }
   selectedAddress.value = address;
   await refreshCheckoutContext(address.id);
 }
@@ -325,10 +404,18 @@ function buildSubmitItems(source: MpCheckoutSubmitRequest['source']) {
 }
 
 async function handleSubmit() {
+  if (completedOrderCode.value) {
+    navigateToPage(`/subpkg-trade/order-detail/index?orderCode=${completedOrderCode.value}`);
+    return;
+  }
+  if (submissionUncertain.value) {
+    navigateToPage('/subpkg-trade/order-list/index');
+    return;
+  }
   if (submitting.value) {
     return;
   }
-  if (syncingContext.value) {
+  if (syncingContext.value || !pricingVerified.value) {
     uni.showToast({ title: t('checkout.syncing'), icon: 'none' });
     return;
   }
@@ -361,17 +448,27 @@ async function handleSubmit() {
         payload.userAddress = context.value.userAddress;
       }
     }
-    const { order } = await sendRequest(checkoutApi.submitOrder(payload));
+    const { order } = await checkoutApi.submitOrder(payload, context.value.id);
 
     if (!order?.orderCode) {
       uni.showToast({ title: t('checkout.submitMissingOrderCode'), icon: 'none' });
       return;
     }
+    completedOrderCode.value = order.orderCode;
     uni.redirectTo({
-      url: `/subpkg-trade/payment/index?orderCode=${order.orderCode}`,
+      url:
+        order.paymentStatus === 'PAID'
+          ? `/subpkg-trade/payment-result/index?status=success&orderCode=${order.orderCode}`
+          : `/subpkg-trade/payment/index?orderCode=${order.orderCode}`,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof CheckoutSubmissionUncertainError) {
+      submissionUncertain.value = true;
+      return;
+    }
     uni.showToast({ title: t('checkout.submitFailed'), icon: 'none' });
+    submitting.value = false;
+    await refreshCheckoutContext(selectedAddress.value?.id);
   } finally {
     submitting.value = false;
   }
@@ -479,6 +576,25 @@ async function handleSubmit() {
         </view>
       </view>
 
+      <CheckoutPromotions
+        v-if="promotionsSupported && context?.calculateResult"
+        :result="context.calculateResult"
+        :selection="promotionSelection"
+        :busy="syncingContext || checkoutLocked"
+        @select-coupons="goSelectCoupons"
+        @apply="updatePromotions"
+      />
+      <AppLoadError
+        v-if="pricingFailed"
+        :text="t('coupon.pricingFailed')"
+        @retry="refreshCheckoutContext(selectedAddress?.id)"
+      />
+      <view
+        v-if="submissionUncertain"
+        class="bg-white mt-2 px-4 py-3 text-xs text-slate-500 leading-relaxed"
+      >
+        {{ t('checkout.submitUncertain') }}
+      </view>
       <view class="bg-white mt-2 px-4">
         <view class="flex items-center justify-between py-4">
           <text class="text-slate-950 text-sm">{{ $t('checkout.productAmount') }}</text>
@@ -524,6 +640,7 @@ async function handleSubmit() {
             :placeholder="$t('checkout.remarkPlaceholder')"
             placeholder-style="color: #cbd5e1"
             :maxlength="200"
+            :disabled="checkoutLocked"
           />
         </view>
       </view>
@@ -558,19 +675,30 @@ async function handleSubmit() {
 
       <view
         class="flex items-center justify-center rounded-3 px-8 py-3"
-        :class="submitting || syncingContext ? 'opacity-60 bg-brand' : 'bg-brand'"
+        :class="
+          submitting ||
+          syncingContext ||
+          (!pricingVerified && !submissionUncertain && !completedOrderCode)
+            ? 'opacity-60 bg-brand'
+            : 'bg-brand'
+        "
         @tap="handleSubmit"
       >
         <text class="text-white text-base font-medium">
           {{
-            submitting
-              ? $t('checkout.submitting')
-              : syncingContext
-                ? $t('cart.updating')
-                : $t('checkout.submit')
+            completedOrderCode
+              ? $t('paymentResult.viewOrder')
+              : submissionUncertain
+                ? $t('checkout.reviewOrders')
+                : submitting
+                  ? $t('checkout.submitting')
+                  : syncingContext
+                    ? $t('cart.updating')
+                    : $t('checkout.submit')
           }}
         </text>
       </view>
     </view>
+    <TToast ref="promotionToast" t-class="toast-wide" />
   </view>
 </template>

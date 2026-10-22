@@ -9,6 +9,7 @@ import { ensureSessionInitialized, refreshSession } from '@/services/session';
 import type { HaloProblemDetail } from '@/types/api';
 import mockGroups from '@/mock/index';
 import { translate } from '@/locales';
+import { CheckoutAccountChangedError } from '@/helpers/checkout';
 
 const BEARER_AUTHENTICATE_PATTERN = /bearer/i;
 const INVALID_TOKEN_PATTERN = /error="?invalid_token"?/i;
@@ -26,6 +27,7 @@ interface RequestMethodLike {
   };
   meta?: {
     skipAuthInit?: boolean;
+    handledErrorStatuses?: number[];
   };
   __retriedAfterAuthRefresh?: boolean;
   send: () => Promise<unknown>;
@@ -157,7 +159,14 @@ function handleForbiddenResponse(response: ResponseLike, problem: HaloProblemDet
   return rejectProblem(problem);
 }
 
-function handleUnexpectedStatus(problem: HaloProblemDetail, statusCode: number) {
+function handleUnexpectedStatus(
+  problem: HaloProblemDetail,
+  statusCode: number,
+  method: RequestMethodLike,
+) {
+  if (method.meta?.handledErrorStatuses?.includes(statusCode)) {
+    return rejectProblem(problem);
+  }
   if (statusCode === 404) {
     return;
   }
@@ -187,7 +196,7 @@ async function resolveResponse(response: ResponseLike, method: RequestMethodLike
     return handleForbiddenResponse(response, problem);
   }
 
-  return handleUnexpectedStatus(problem, statusCode);
+  return handleUnexpectedStatus(problem, statusCode, method);
 }
 
 const appConfig = useAppConfig();
@@ -215,6 +224,12 @@ export const alovaInst = createAlova({
     await ensureRequestCredential(method);
 
     const userStore = useUserStore();
+    if (
+      method.meta?.checkoutOwner &&
+      method.meta.checkoutOwner !== userStore.profile?.metadata?.name
+    ) {
+      throw new CheckoutAccountChangedError();
+    }
     if (!shouldSkipAuthInit(method) && userStore.credential) {
       updateAuthorizationHeader(method, userStore.credential);
     }

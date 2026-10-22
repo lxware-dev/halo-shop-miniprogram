@@ -18,6 +18,7 @@ import {
   canBuyAgain,
   getSpecText,
   requiresShipping,
+  getOrderAmounts,
 } from '@/helpers/order';
 import type { OrderResponse, OrderItemResponse, FulfillmentUcResponse } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
@@ -114,23 +115,7 @@ const shippingAddr = computed(() => {
   return { name, phone, fullAddr };
 });
 
-/**
- * Item subtotal (sum of item unit price x quantity)
- */
-const subtotal = computed(() => {
-  return (order.value?.items ?? []).reduce(
-    (sum, item) => sum + (item.unitPrice ?? 0) * (item.quantity ?? 1),
-    0,
-  );
-});
-
-/**
- * Shipping fee = order total - item subtotal; clamp negative values to 0 for safety
- */
-const shippingFee = computed(() => {
-  const fee = (order.value?.totalAmount ?? 0) - subtotal.value;
-  return fee > 0 ? fee : 0;
-});
+const amounts = computed(() => getOrderAmounts(order.value));
 
 function getItemSpecText(item: OrderItemResponse): string {
   return getSpecText(item.productVariantSnapshot?.specValues);
@@ -375,17 +360,41 @@ function onCopyOrderCode() {
       >
         <view class="flex items-center justify-between">
           <text class="text-sm text-slate-500">{{ $t('order.productTotal') }}</text>
-          <text class="text-sm text-slate-950">{{ formatCurrency(subtotal) }}</text>
+          <text class="text-sm text-slate-950">{{ formatCurrency(amounts.subtotal) }}</text>
         </view>
         <view class="flex items-center justify-between">
           <text class="text-sm text-slate-500">{{ $t('order.freight') }}</text>
           <text class="text-sm text-slate-950">
-            {{ shippingFee > 0 ? formatCurrency(shippingFee) : $t('checkout.freeShipping') }}
+            {{
+              amounts.shipping > 0 ? formatCurrency(amounts.shipping) : $t('checkout.freeShipping')
+            }}
           </text>
+        </view>
+        <view
+          v-if="(order.couponDiscountAmount ?? 0) > 0"
+          class="flex items-center justify-between gap-4"
+        >
+          <text class="text-sm text-slate-500">{{ $t('order.couponDiscount') }}</text>
+          <text class="text-sm text-brand shrink-0"
+            >-{{ formatCurrency(order.couponDiscountAmount) }}</text
+          >
+        </view>
+        <view v-if="(order.discountAmount ?? 0) > 0" class="flex items-start justify-between gap-4">
+          <view class="min-w-0 flex flex-col gap-1">
+            <text class="text-sm text-slate-500 break-words">{{
+              order.discountName || $t('order.orderDiscount')
+            }}</text>
+            <text v-if="order.discountCode" class="text-xs text-slate-400 break-words">{{
+              order.discountCode
+            }}</text>
+          </view>
+          <text class="text-sm text-brand shrink-0"
+            >-{{ formatCurrency(order.discountAmount) }}</text
+          >
         </view>
         <view class="flex items-center justify-between pt-1">
           <text class="text-sm text-slate-950">{{ $t('order.total') }}</text>
-          <text class="text-xl text-brand font-bold">{{ formatCurrency(order.totalAmount) }}</text>
+          <text class="text-xl text-brand font-bold">{{ formatCurrency(amounts.payable) }}</text>
         </view>
       </view>
     </view>

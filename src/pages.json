@@ -222,6 +222,23 @@
             "navigationBarBackgroundColor": "#FFFFFF",
             "navigationBarTextStyle": "black"
           }
+        },
+        {
+          "path": "coupons/index",
+          "style": {
+            "navigationBarTitleText": "优惠券",
+            "enablePullDownRefresh": true,
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
+        },
+        {
+          "path": "coupons/detail",
+          "style": {
+            "navigationBarTitleText": "优惠券详情",
+            "navigationBarBackgroundColor": "#FFFFFF",
+            "navigationBarTextStyle": "black"
+          }
         }
       ]
     },

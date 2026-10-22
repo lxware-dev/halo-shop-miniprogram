@@ -1,4 +1,5 @@
 import { defineMock } from '@alova/mock';
+import { applyMockPromotions, consumeMockCoupons } from './coupon.mock';
 import { faker } from '@faker-js/faker/locale/zh_CN';
 import type {
   CheckoutContextResponse,
@@ -9,6 +10,7 @@ import type {
   PaymentMethodPublicResponse,
   PrepareCheckoutRequest,
   UserAddressUpsertRequest,
+  OrderResponse,
 } from '@halo-dev/api-client';
 
 /**
@@ -18,7 +20,16 @@ type CheckoutItemWithCartId = CheckoutItemResponse & {
   cartItemId?: number;
 };
 
-export interface MockCreatedOrder {
+export interface MockCreatedOrder extends Pick<
+  OrderResponse,
+  | 'subtotalAmount'
+  | 'shippingAmount'
+  | 'couponDiscountAmount'
+  | 'appliedCoupons'
+  | 'discountAmount'
+  | 'discountCode'
+  | 'discountName'
+> {
   orderCode: string;
   contextId?: string;
   totalAmount: number;
@@ -71,7 +82,7 @@ function generateCheckoutContext(
         maxPrice: price,
       },
       productVariant: {
-        id: (i + 1) * 10 + 1,
+        id: sourceItems?.[i]?.productVariantId ?? (i + 1) * 10 + 1,
         productId: i + 1,
         price,
         stock: faker.number.int({ min: 10, max: 200 }),
@@ -180,6 +191,8 @@ function generateOrderCode(): string {
   return `ORD${ts}${rand}`;
 }
 
+const baseContextCache = new Map<string, CheckoutContextResponse>();
+
 const contextCache = new Map<string, CheckoutContextResponse>();
 
 function getSubmitItemsKey(items?: MpCheckoutSubmitRequest['items']): string {
@@ -215,53 +228,121 @@ function resolveContextBySubmitPayload(payload: MpCheckoutSubmitRequest): Checko
   );
 }
 
-export default defineMock({
-  /**
-   * Prepare the checkout context
-   * POST /apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/prepare
-   *
-   * Cart source: body.source='CART', body.items=[{ cartItemId, quantity }]
-   * Buy now: body.source='BUY_NOW', body.items=[{ productVariantId, quantity }]
-   */
-  '[POST]/apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/prepare': ({ data }) => {
-    const body = data as PrepareCheckoutRequest;
-    const contextId = faker.string.uuid();
-    const context = generateCheckoutContext(
-      contextId,
-      body.source,
-      body.items,
-      body.selectedAddressId,
-    );
-    contextCache.set(contextId, context);
-    return context;
-  },
+function createContext(body: PrepareCheckoutRequest) {
+  const id = faker.string.uuid();
+  const key = `${body.source}:${getSubmitItemsKey(body.items)}`;
+  const base =
+    baseContextCache.get(key) ??
+    generateCheckoutContext(id, body.source, body.items, body.selectedAddressId);
+  baseContextCache.set(key, base);
+  const context = { ...base, id, selectedAddressId: body.selectedAddressId };
+  contextCache.set(id, context);
+  return context;
+}
 
-  /**
-   * Submit checkout from Mini Program (client submits the full checkout payload) -> create order
-   * POST /apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/submit
-   */
-  '[POST]/apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/submit': ({ data }) => {
-    const body = data as MpCheckoutSubmitRequest;
-    const context = resolveContextBySubmitPayload(body);
-    const orderCode = generateOrderCode();
+function priceContext(context: CheckoutContextResponse, code?: string, ids?: number[]) {
+  const key = `${context.source}:${getSubmitItemsKey(
+    (context.items ?? []).map((item) => ({
+      cartItemId: (item as CheckoutItemWithCartId).cartItemId,
+      productVariantId: item.productVariant?.id,
+      quantity: item.quantity ?? 1,
+    })),
+  )}`;
+  const base = baseContextCache.get(key) ?? context;
+  context.calculateResult = applyMockPromotions(base.calculateResult!, code, ids);
+  return context;
+}
 
-    // Store the new order in the shared map (read by order.mock.ts)
-    createdOrdersMap.set(orderCode, {
-      orderCode,
-      contextId: context.id,
-      totalAmount: context.calculateResult?.saleTotalAmount ?? 0,
-      payableAmount: context.calculateResult?.payableAmount ?? 0,
-      items: context.items ?? [],
-      selectedAddressId: body.selectedAddressId,
-      customerNotes: body.customerNotes,
-      createdAt: new Date().toISOString(),
+function createOrder(
+  context: CheckoutContextResponse,
+  body: Pick<MpCheckoutSubmitRequest, 'selectedAddressId' | 'customerNotes'>,
+) {
+  const result = context.calculateResult!;
+  if (result.rejectedCoupons?.length) {
+    throw Object.assign(new Error('订单优惠已变化，请重新确认'), {
+      status: 400,
+      title: 'Bad Request',
     });
+  }
+  const orderCode = generateOrderCode();
+  createdOrdersMap.set(orderCode, {
+    orderCode,
+    contextId: context.id,
+    totalAmount: result.payableAmount ?? 0,
+    payableAmount: result.payableAmount ?? 0,
+    subtotalAmount: result.saleTotalAmount,
+    shippingAmount: result.shippingFeeAmount,
+    couponDiscountAmount: result.couponDiscountAmount,
+    appliedCoupons: result.appliedCoupons,
+    discountAmount: result.discountAmount,
+    discountCode: result.discountCode,
+    discountName: result.discountName,
+    items: context.items ?? [],
+    selectedAddressId: body.selectedAddressId,
+    customerNotes: body.customerNotes,
+    createdAt: new Date().toISOString(),
+  });
+  consumeMockCoupons(
+    (result.appliedCoupons ?? []).flatMap((coupon) =>
+      coupon.customerCouponId ? [coupon.customerCouponId] : [],
+    ),
+    orderCode,
+  );
+  return {
+    order: { orderCode, paymentStatus: result.payableAmount === 0 ? 'PAID' : 'PENDING' },
+  } satisfies OrderCreateResponse;
+}
 
-    // Return a standard checkout response
-    return {
-      order: {
-        orderCode,
-      },
-    } satisfies OrderCreateResponse;
-  },
+function withProblem(handler: (request: any) => unknown) {
+  return (request: any) => {
+    try {
+      return handler(request);
+    } catch (error) {
+      const problem = error as { status?: number; title?: string; detail?: string };
+      if (problem.status !== 400) {
+        throw error;
+      }
+      return {
+        status: 400,
+        statusText: 'Bad Request',
+        body: { ...problem, status: 400, title: 'Bad Request', detail: problem.detail },
+      };
+    }
+  };
+}
+
+// Draft contract for halo-pro#670; these extensions are used only by Mock.
+type MockPrepareRequest = PrepareCheckoutRequest & {
+  discountCode?: string;
+  customerCouponIds?: number[];
+};
+type MockSubmitRequest = MpCheckoutSubmitRequest & {
+  discountCode?: string;
+  customerCouponIds?: number[];
+};
+
+export default defineMock({
+  '[POST]/apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/prepare': withProblem(({ data }) => {
+    const body = data as MockPrepareRequest;
+    return priceContext(createContext(body), body.discountCode, body.customerCouponIds);
+  }),
+  '[POST]/apis/mp.api.ecommerce.halo.run/v1alpha1/checkout/-/submit': withProblem(({ data }) => {
+    const body = data as MockSubmitRequest;
+    const context = priceContext(
+      resolveContextBySubmitPayload(body),
+      body.discountCode,
+      body.customerCouponIds,
+    );
+    if (
+      body.expectedPayableAmount != null &&
+      body.expectedPayableAmount !== context.calculateResult?.payableAmount
+    ) {
+      throw Object.assign(new Error('Price changed'), {
+        status: 400,
+        title: 'Price changed',
+        detail: '订单金额已变化，请重新确认',
+      });
+    }
+    return createOrder(context, body);
+  }),
 });

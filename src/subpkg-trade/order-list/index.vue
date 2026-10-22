@@ -23,6 +23,7 @@ import {
   getSpecText,
   getDisplayItems,
   requiresShipping,
+  getOrderAmounts,
 } from '@/helpers/order';
 import type { OrderResponse, OrderItemResponse } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
@@ -384,7 +385,7 @@ function goShopping() {
           <text class="text-xs text-slate-500 mr-1">
             {{ $t('order.total') }}
             <text class="text-sm text-slate-950 font-bold">
-              {{ formatCurrency(order.totalAmount) }}
+              {{ formatCurrency(getOrderAmounts(order).payable) }}
             </text>
           </text>
 

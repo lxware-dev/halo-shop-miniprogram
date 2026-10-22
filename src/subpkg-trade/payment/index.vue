@@ -6,6 +6,7 @@ import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { openLegalDocument } from '@/helpers/legal';
+import { getOrderAmounts } from '@/helpers/order';
 import { sendRequest, useQuery } from '@/hooks/useRequest';
 import { formatCurrency, formatPriceByLocale, getCurrencySymbol } from '@/utils/format';
 import type {
@@ -21,7 +22,7 @@ const { data: orderData, run: runOrder } = useQuery<OrderResponse, { orderCode: 
   (params: { orderCode: string }) => orderApi.getOrder(params.orderCode),
   { immediate: false },
 );
-const payableAmount = computed(() => orderData.value?.totalAmount ?? 0);
+const payableAmount = computed(() => getOrderAmounts(orderData.value).payable);
 const currencySymbol = getCurrencySymbol();
 
 onLoad(async (options) => {
