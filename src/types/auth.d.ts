@@ -8,6 +8,7 @@ declare module 'alova' {
        * Used only for requests fired by initialization itself, to avoid a deadlock in beforeRequest.
        */
       skipAuthInit?: boolean;
+      checkoutOwner?: string;
     };
   }
 }

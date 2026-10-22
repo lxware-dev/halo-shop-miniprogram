@@ -9,6 +9,7 @@ import { ensureSessionInitialized, refreshSession } from '@/services/session';
 import type { HaloProblemDetail } from '@/types/api';
 import mockGroups from '@/mock/index';
 import { translate } from '@/locales';
+import { CheckoutAccountChangedError } from '@/helpers/checkout';
 
 const BEARER_AUTHENTICATE_PATTERN = /bearer/i;
 const INVALID_TOKEN_PATTERN = /error="?invalid_token"?/i;
@@ -26,6 +27,7 @@ interface RequestMethodLike {
   };
   meta?: {
     skipAuthInit?: boolean;
+    checkoutOwner?: string;
   };
   __retriedAfterAuthRefresh?: boolean;
   send: () => Promise<unknown>;
@@ -142,7 +144,10 @@ async function handleUnauthorizedResponse(
     await refreshSession();
     method.__retriedAfterAuthRefresh = true;
     return method.send();
-  } catch {
+  } catch (error) {
+    if (error instanceof CheckoutAccountChangedError) {
+      throw error;
+    }
     userStore.clearCredential();
     return rejectProblem(problem);
   }
@@ -177,7 +182,17 @@ async function resolveResponse(response: ResponseLike, method: RequestMethodLike
     return response.data;
   }
 
-  const problem = response.data as HaloProblemDetail;
+  const problem = method.meta?.checkoutOwner
+    ? { ...(response.data as HaloProblemDetail), status: statusCode }
+    : (response.data as HaloProblemDetail);
+
+  if (
+    (statusCode === 401 || statusCode === 403) &&
+    method.meta?.checkoutOwner !== undefined &&
+    method.meta.checkoutOwner !== (useUserStore().profile?.metadata?.name ?? '')
+  ) {
+    throw new CheckoutAccountChangedError();
+  }
 
   if (statusCode === 401) {
     return handleUnauthorizedResponse(response, method, problem);
@@ -187,6 +202,10 @@ async function resolveResponse(response: ResponseLike, method: RequestMethodLike
     return handleForbiddenResponse(response, problem);
   }
 
+  if (method.meta?.checkoutOwner) {
+    // The confirmation page owns persistent error feedback; never toast internal 5xx detail.
+    return rejectProblem(problem);
+  }
   return handleUnexpectedStatus(problem, statusCode);
 }
 
@@ -215,6 +234,12 @@ export const alovaInst = createAlova({
     await ensureRequestCredential(method);
 
     const userStore = useUserStore();
+    if (
+      method.meta?.checkoutOwner !== undefined &&
+      method.meta.checkoutOwner !== (userStore.profile?.metadata?.name ?? '')
+    ) {
+      throw new CheckoutAccountChangedError();
+    }
     if (!shouldSkipAuthInit(method) && userStore.credential) {
       updateAuthorizationHeader(method, userStore.credential);
     }
