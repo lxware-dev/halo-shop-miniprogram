@@ -1,239 +1,74 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { computed } from 'vue';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
-import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
 import { openLegalDocument } from '@/helpers/legal';
-import { sendRequest, useQuery } from '@/hooks/useRequest';
+import { useOrderPayment } from '@/composables/useOrderPayment';
 import { formatCurrency, formatPriceByLocale, getCurrencySymbol } from '@/utils/format';
-import type {
-  OrderResponse,
-  PaymentMethodPublicResponse,
-  PaymentInitiateResponse,
-  WechatPayJsapiResponse,
-} from '@halo-dev/api-client';
+import { ICON_COLOR } from '@/helpers/icon';
 
-const orderCode = ref<string>('');
 const { t, locale } = useI18n();
-const { data: orderData, run: runOrder } = useQuery<OrderResponse, { orderCode: string }>(
-  (params: { orderCode: string }) => orderApi.getOrder(params.orderCode),
-  { immediate: false },
-);
-const payableAmount = computed(() => orderData.value?.totalAmount ?? 0);
+const {
+  orderCode,
+  order,
+  paymentMethods,
+  selectedMethodId,
+  loading,
+  loadError,
+  paying,
+  redirecting,
+  awaitingResult,
+  resultNavigationFailed,
+  isPayable,
+  canPay,
+  load,
+  selectMethod,
+  pay,
+  viewPaymentResult,
+  dispose,
+} = useOrderPayment();
+const payableAmount = computed(() => order.value?.totalAmount ?? 0);
+const formattedAmount = computed(() => formatPriceByLocale(payableAmount.value, locale.value));
 const currencySymbol = getCurrencySymbol();
+const paymentActionDisabled = computed(() =>
+  awaitingResult.value ? redirecting.value : !canPay.value,
+);
+const paymentActionText = computed(() => {
+  if (awaitingResult.value) {
+    return t(redirecting.value ? 'paymentResult.opening' : 'paymentResult.viewResult');
+  }
+  return paying.value
+    ? t('payment.processing')
+    : t('payment.payNow', {
+        amount: formatCurrency(payableAmount.value, { locale: locale.value }),
+      });
+});
 
 onLoad(async (options) => {
   if (!guardCurrentPageAccess()) {
     return;
   }
   if (options?.orderCode) {
-    orderCode.value = options.orderCode;
+    await load(options.orderCode);
   }
-  if (orderCode.value) {
-    try {
-      await runOrder({ orderCode: orderCode.value });
-    } catch {
-      // Ignore and keep the amount at 0
-    }
-  }
-  await loadPaymentMethods();
 });
+onUnload(dispose);
 
-const paymentMethods = ref<PaymentMethodPublicResponse[]>([]);
-const selectedMethodId = ref<number | null>(null);
-const paying = ref(false);
-const { run: runPaymentMethods } = useQuery<PaymentMethodPublicResponse[], { orderCode: string }>(
-  (_params: { orderCode: string }) => orderApi.getPaymentMethods(),
-  { immediate: false },
-);
-
-async function loadPaymentMethods() {
-  if (!orderCode.value) {
-    return;
-  }
-  try {
-    const methods = await runPaymentMethods({ orderCode: orderCode.value });
-    // WeChat Mini Program supports only WeChat Pay, so filter out other payment methods
-    paymentMethods.value = (methods ?? []).filter((m) => m.provider === 'WECHAT_PAY' && m.enabled);
-    selectedMethodId.value = paymentMethods.value[0]?.id ?? null;
-  } catch {
-    paymentMethods.value = [
-      { id: 1, name: t('payment.wechatPay'), provider: 'WECHAT_PAY', enabled: true },
-    ];
-    selectedMethodId.value = 1;
-  }
-}
-
-/**
- * Payment method metadata (icon / color / description)
- */
-interface MethodMeta {
-  bg: string;
-  icon: string;
-  desc: string;
-  recommended?: boolean;
-}
-
-const PROVIDER_ALIASES: Record<string, string> = {
-  WECHAT: 'WECHAT_PAY',
-  WECHATPAY: 'WECHAT_PAY',
-};
-
-function getMeta(provider: string | undefined): MethodMeta {
-  const normalizedProvider = PROVIDER_ALIASES[provider ?? ''] ?? provider ?? '';
-  if (normalizedProvider === 'WECHAT_PAY') {
-    return {
-      bg: '#22c55e',
-      icon: 'logo-wechatpay',
-      desc: t('payment.wechatPayDesc'),
-      recommended: true,
-    };
-  }
-  return {
-    bg: '#64748b',
-    icon: 'wallet',
-    desc: t('payment.onlinePay'),
-  };
-}
-
-/**
- * Format amount
- */
-const formattedAmount = computed(() => formatPriceByLocale(payableAmount.value, locale.value));
-
-let pollTimer: ReturnType<typeof setTimeout> | null = null;
-let pollCount = 0;
-const MAX_POLL = 15;
-const POLL_INTERVAL = 2000;
-
-function clearPollTimer() {
-  if (pollTimer) {
-    clearTimeout(pollTimer);
-    pollTimer = null;
-  }
-}
-
-onUnmounted(() => {
-  clearPollTimer();
-});
-
-/**
- * Poll payment session status
- * PENDING -> continue polling; SUCCESS/SUCCEEDED -> go to the success page; any other terminal status -> failure page
- */
-function startPolling(sessionCode: string) {
-  pollCount = 0;
-  poll();
-
-  function poll() {
-    if (pollCount >= MAX_POLL) {
-      navigateToResult('fail');
-      return;
-    }
-
-    pollTimer = setTimeout(async () => {
-      pollCount++;
-      try {
-        const status = await sendRequest(orderApi.getPaymentSessionStatus(sessionCode));
-        if (status === 'SUCCESS' || status === 'SUCCEEDED' || status === 'AUTHORIZED') {
-          navigateToResult('success');
-        } else if (status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') {
-          navigateToResult('fail');
-        } else {
-          poll();
-        }
-      } catch {
-        poll();
-      }
-    }, POLL_INTERVAL);
-  }
-}
-
-function navigateToResult(status: 'success' | 'fail') {
-  clearPollTimer();
-  paying.value = false;
+function goToOrderDetail() {
   uni.redirectTo({
-    url: `/subpkg-trade/payment-result/index?status=${status}&orderCode=${orderCode.value}`,
+    url: orderCode.value
+      ? `/subpkg-trade/order-detail/index?orderCode=${encodeURIComponent(orderCode.value)}`
+      : '/subpkg-trade/order-list/index',
   });
 }
 
-function extractWechatJsapiParams(
-  response: PaymentInitiateResponse,
-): WechatPayJsapiResponse | null {
-  return response.payload?.payload?.wechatPay?.jsapi ?? null;
-}
-
-async function handlePay() {
-  if (!selectedMethodId.value) {
-    uni.showToast({ title: t('payment.selectMethodToast'), icon: 'none' });
-    return;
-  }
-  if (paying.value) {
-    return;
-  }
-
-  paying.value = true;
-  try {
-    const response = await sendRequest(
-      orderApi.initiatePayment(orderCode.value, {
-        paymentMethodId: selectedMethodId.value,
-        preferredResponseType: 'MINI_PROGRAM',
-      }),
-    );
-
-    const sessionCode = response.sessionCode;
-    const params = extractWechatJsapiParams(response);
-    const paymentErrorMessage = response.payload?.errorMessage;
-
-    if (
-      !sessionCode ||
-      !params?.package ||
-      !params.timeStamp ||
-      !params.nonceStr ||
-      !params.paySign
-    ) {
-      paying.value = false;
-      uni.showToast({
-        title: paymentErrorMessage || t('payment.invalidParams'),
-        icon: 'none',
-      });
-      return;
-    }
-
-    // In mock mode (package.prepay_id starts with mock_), skip real payment invocation and enter polling directly
-    if (!params.package.includes('mock_')) {
-      try {
-        const provider = (await uni.getProvider({
-          service: 'payment',
-        })) as { provider: PlusPaymentPaymentChannel['id'][] };
-        if (provider.provider.includes('wxpay')) {
-          await new Promise((resolve, reject) => {
-            uni.requestPayment({
-              provider: 'wxpay',
-              timeStamp: params.timeStamp,
-              nonceStr: params.nonceStr,
-              package: params.package,
-              signType: params.signType ?? 'RSA',
-              paySign: params.paySign,
-              success: () => resolve(void 0),
-              fail: (err) => reject(err),
-            });
-          });
-        }
-      } catch {
-        // User canceled or payment failed
-        navigateToResult('fail');
-        return;
-      }
-    }
-
-    // Poll the backend to confirm the payment result
-    startPolling(sessionCode);
-  } catch {
-    paying.value = false;
-    uni.showToast({ title: t('payment.initiateFailed'), icon: 'none' });
+function handlePaymentAction() {
+  if (awaitingResult.value) {
+    viewPaymentResult();
+  } else {
+    void pay();
   }
 }
 </script>
@@ -260,7 +95,30 @@ async function handlePay() {
     <view class="flex flex-col gap-4 px-4 pb-27.5">
       <text class="text-slate-950 text-sm font-medium">{{ $t('payment.selectMethod') }}</text>
 
-      <view v-if="paymentMethods.length === 0" class="flex items-center justify-center py-8">
+      <view v-if="loading" class="flex items-center justify-center py-8">
+        <text class="text-slate-400 text-sm">{{ $t('common.loading') }}</text>
+      </view>
+
+      <view v-else-if="loadError" class="flex flex-col items-center gap-4 py-8">
+        <text class="text-slate-500 text-sm text-center">
+          {{ $t(loadError === 'order' ? 'payment.loadOrderFailed' : 'payment.loadMethodsFailed') }}
+        </text>
+        <view class="border border-solid border-slate-200 rounded-2 px-6 py-3" @tap="load()">
+          <text class="text-slate-700 text-sm">{{ $t('payment.retryLoad') }}</text>
+        </view>
+      </view>
+
+      <view v-else-if="!isPayable" class="flex flex-col items-center gap-4 py-8">
+        <text class="text-slate-500 text-sm">{{ $t('payment.orderNotPayable') }}</text>
+        <view
+          class="border border-solid border-slate-200 rounded-2 px-6 py-3"
+          @tap="goToOrderDetail"
+        >
+          <text class="text-slate-700 text-sm">{{ $t('paymentResult.viewOrder') }}</text>
+        </view>
+      </view>
+
+      <view v-else-if="paymentMethods.length === 0" class="flex items-center justify-center py-8">
         <text class="text-slate-400 text-sm">{{ $t('payment.noMethods') }}</text>
       </view>
 
@@ -270,37 +128,30 @@ async function handlePay() {
           :key="method.id"
           class="flex items-center gap-4 bg-white border border-solid rounded-2 px-4 py-4"
           :class="selectedMethodId === method.id ? 'border-brand' : 'border-slate-100'"
-          @tap="selectedMethodId = method.id ?? null"
+          @tap="selectMethod(method.id)"
         >
           <view
-            class="flex items-center justify-center rounded-full shrink-0 w-6.5 h-6.5"
-            :style="{ backgroundColor: getMeta(method.provider).bg }"
+            class="flex items-center justify-center rounded-full shrink-0 w-6.5 h-6.5 bg-status-wechat"
           >
-            <TIcon
-              :name="getMeta(method.provider).icon"
-              v-bind="{ size: '28rpx', color: '#fff' }"
-            />
+            <TIcon name="logo-wechatpay" v-bind="{ size: '28rpx', color: ICON_COLOR.inverse }" />
           </view>
 
           <view class="flex-1 flex flex-col gap-0.5 min-w-0">
             <view class="flex items-center gap-2">
               <text class="text-slate-950 text-sm font-medium">{{ method.name }}</text>
-              <view
-                v-if="getMeta(method.provider).recommended"
-                class="flex items-center bg-brand/10 rounded-0.5 px-1.5 py-0.5"
-              >
+              <view class="flex items-center bg-brand/10 rounded-0.5 px-1.5 py-0.5">
                 <text class="text-brand text-xs">{{ $t('payment.recommended') }}</text>
               </view>
             </view>
-            <text class="text-slate-500 text-xs">{{ getMeta(method.provider).desc }}</text>
+            <text class="text-slate-500 text-xs">{{ $t('payment.wechatPayDesc') }}</text>
           </view>
 
           <view
             class="flex items-center justify-center shrink-0 rounded-full border-2 border-solid w-5 h-5"
-            :style="
+            :class="
               selectedMethodId === method.id
-                ? 'border-color: #ee2b2b; background-color: #ee2b2b'
-                : 'border-color: #cbd5e1; background-color: transparent;'
+                ? 'border-brand bg-brand'
+                : 'border-slate-300 bg-transparent'
             "
           >
             <view v-if="selectedMethodId === method.id" class="rounded-full bg-white w-2 h-2" />
@@ -309,20 +160,19 @@ async function handlePay() {
       </view>
 
       <view
-        class="flex items-center justify-center gap-3 rounded-2 border border-solid px-4 py-3.5 bg-brand/5"
-        style="border-color: rgba(238, 43, 43, 0.1)"
+        class="flex items-center justify-center gap-3 rounded-2 border border-solid border-brand/10 px-4 py-3.5 bg-brand/5"
       >
         <TIcon name="info-circle" v-bind="{ size: '30rpx', color: 'rgba(238,43,43,0.8)' }" />
         <view class="flex-1 flex flex-wrap items-center text-xs leading-relaxed">
-          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementPrefix') }}</text>
+          <text class="text-brand/80">{{ $t('payment.agreementPrefix') }}</text>
           <text class="text-brand font-medium" @tap.stop="openLegalDocument('paymentAgreement')">
             {{ $t('legal.paymentAgreement') }}
           </text>
-          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementAnd') }}</text>
+          <text class="text-brand/80">{{ $t('payment.agreementAnd') }}</text>
           <text class="text-brand font-medium" @tap.stop="openLegalDocument('privacyPolicy')">
             {{ $t('legal.privacyPolicy') }}
           </text>
-          <text style="color: rgba(238, 43, 43, 0.8)">{{ $t('payment.agreementSuffix') }}</text>
+          <text class="text-brand/80">{{ $t('payment.agreementSuffix') }}</text>
         </view>
       </view>
     </view>
@@ -330,19 +180,16 @@ async function handlePay() {
     <view
       class="fixed bottom-0 left-0 right-0 z-10 bg-white border-0 border-t border-solid border-slate-100 flex flex-col gap-3 px-4 pt-4.5 pb-safe"
     >
+      <text v-if="resultNavigationFailed" class="text-slate-500 text-sm text-center">
+        {{ $t('paymentResult.openFailed') }}
+      </text>
       <view
         class="flex items-center justify-center rounded-2 py-3.5 w-full bg-brand shadow-brand-btn"
-        :class="paying || paymentMethods.length === 0 ? 'opacity-60' : ''"
-        @tap="handlePay"
+        :class="paymentActionDisabled ? 'opacity-60' : ''"
+        @tap="handlePaymentAction"
       >
         <text class="text-white text-base font-bold">
-          {{
-            paying
-              ? $t('payment.processing')
-              : $t('payment.payNow', {
-                  amount: formatCurrency(payableAmount, { locale }),
-                })
-          }}
+          {{ paymentActionText }}
         </text>
       </view>
     </view>

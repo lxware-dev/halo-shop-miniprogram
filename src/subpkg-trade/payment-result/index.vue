@@ -1,58 +1,66 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { shallowRef, computed } from 'vue';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import { useI18n } from 'vue-i18n';
-import { orderApi } from '@/api/modules/order';
 import { guardCurrentPageAccess } from '@/helpers/auth';
-import { useQuery } from '@/hooks/useRequest';
+import { usePaymentResult } from '@/composables/usePaymentResult';
 import { ICON_COLOR } from '@/helpers/icon';
 import { getCurrencySymbol, formatPriceByLocale } from '@/utils/format';
-import type { OrderResponse } from '@halo-dev/api-client';
 
-const status = ref<'success' | 'fail'>('success');
-const orderCode = ref<string>('');
+const orderCode = shallowRef('');
+const sessionCode = shallowRef('');
 const { t, locale } = useI18n();
-const { data: orderData, run: runOrder } = useQuery<OrderResponse, { orderCode: string }>(
-  (params: { orderCode: string }) => orderApi.getOrder(params.orderCode),
-  { immediate: false },
-);
-const amount = computed(() => orderData.value?.totalAmount ?? 0);
+const { order, result, checking, queryFailed, check, dispose } = usePaymentResult();
+const amount = computed(() => order.value?.totalAmount ?? 0);
 const currencySymbol = getCurrencySymbol();
+const isSuccess = computed(() => result.value === 'success');
+const isPending = computed(() => result.value === 'pending');
+const resultTitle = computed(() => t(`paymentResult.${result.value}`));
+const resultDescription = computed(() =>
+  t(
+    queryFailed.value && isPending.value
+      ? 'paymentResult.queryFailed'
+      : `paymentResult.${result.value}Desc`,
+  ),
+);
+const primaryActionText = computed(() => {
+  if (isPending.value) {
+    return t(checking.value ? 'paymentResult.checking' : 'paymentResult.checkAgain');
+  }
+  return t(isSuccess.value ? 'paymentResult.viewOrder' : 'paymentResult.retryPay');
+});
+const formattedAmount = computed(() => formatPriceByLocale(amount.value, locale.value));
 
 onLoad(async (options) => {
   if (!guardCurrentPageAccess()) {
     return;
   }
-  if (options?.status) {
-    status.value = options.status === 'fail' ? 'fail' : 'success';
-  }
-  if (options?.orderCode) {
-    orderCode.value = options.orderCode;
-  }
-  if (orderCode.value) {
-    try {
-      await runOrder({ orderCode: orderCode.value });
-    } catch {
-      // ignore
-    }
-  }
+  orderCode.value = options?.orderCode ?? '';
+  sessionCode.value = options?.sessionCode ?? '';
+  // URL status and client payment callbacks cannot prove payment success.
+  await checkResult();
 });
+onUnload(dispose);
 
-const isSuccess = computed(() => status.value === 'success');
+function checkResult() {
+  return check(orderCode.value, sessionCode.value || undefined);
+}
 
-const formattedAmount = computed(() => {
-  return formatPriceByLocale(amount.value, locale.value);
-});
+function handlePrimaryAction() {
+  if (isPending.value) {
+    void checkResult();
+  } else {
+    goToOrderDetail();
+  }
+}
 
 function goToOrderDetail() {
-  if (orderCode.value) {
-    uni.redirectTo({
-      url: `/subpkg-trade/order-detail/index?orderCode=${orderCode.value}`,
-    });
-  } else {
-    uni.redirectTo({ url: '/subpkg-trade/order-list/index' });
-  }
+  uni.redirectTo({
+    url: orderCode.value
+      ? `/subpkg-trade/order-detail/index?orderCode=${encodeURIComponent(orderCode.value)}`
+      : '/subpkg-trade/order-list/index',
+  });
 }
 
 function goHome() {
@@ -71,6 +79,12 @@ function goHome() {
           <TIcon name="check" v-bind="{ size: '72rpx', color: ICON_COLOR.inverse }" />
         </view>
         <view
+          v-else-if="isPending"
+          class="flex items-center justify-center rounded-full w-18 h-18 bg-status-info"
+        >
+          <TIcon name="time" v-bind="{ size: '72rpx', color: ICON_COLOR.inverse }" />
+        </view>
+        <view
           v-else
           class="flex items-center justify-center rounded-full w-18 h-18 bg-status-danger"
         >
@@ -80,10 +94,10 @@ function goHome() {
 
       <view class="flex flex-col items-center gap-2 mb-10">
         <text class="text-slate-950 text-2xl font-medium">
-          {{ isSuccess ? t('paymentResult.success') : t('paymentResult.fail') }}
+          {{ checking ? t('paymentResult.checking') : resultTitle }}
         </text>
         <text class="text-slate-500 text-sm text-center">
-          {{ isSuccess ? t('paymentResult.successDesc') : t('paymentResult.failDesc') }}
+          {{ resultDescription }}
         </text>
       </view>
 
@@ -97,11 +111,20 @@ function goHome() {
       <view class="flex flex-col gap-4 w-full max-w-96">
         <view
           class="flex items-center justify-center bg-brand rounded-2 py-3.5 w-full"
-          @tap="goToOrderDetail"
+          :class="checking ? 'opacity-60' : ''"
+          @tap="handlePrimaryAction"
         >
           <text class="text-white text-base font-medium">
-            {{ isSuccess ? t('paymentResult.viewOrder') : t('paymentResult.retryPay') }}
+            {{ primaryActionText }}
           </text>
+        </view>
+
+        <view
+          v-if="isPending"
+          class="flex items-center justify-center bg-white border border-solid border-slate-200 rounded-2 py-3.5 w-full"
+          @tap="goToOrderDetail"
+        >
+          <text class="text-slate-700 text-base">{{ t('paymentResult.viewOrder') }}</text>
         </view>
 
         <view

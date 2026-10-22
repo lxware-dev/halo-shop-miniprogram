@@ -196,6 +196,10 @@ const enUS = {
   'payment.orderCode': defineNamedMessage((named) => `Order code: ${named('code')}`),
   'payment.selectMethod': 'Select payment method',
   'payment.noMethods': 'No payment methods available',
+  'payment.loadOrderFailed': 'Unable to load the order. Please try again.',
+  'payment.loadMethodsFailed': 'Unable to load payment methods. Please try again.',
+  'payment.retryLoad': 'Reload',
+  'payment.orderNotPayable': 'This order cannot be paid. Please check its status.',
   'payment.recommended': 'Recommended',
   'payment.agreementPrefix': 'By paying, you agree to the',
   'payment.agreementAnd': 'and',
@@ -335,6 +339,16 @@ const enUS = {
 
   'paymentResult.success': 'Payment successful',
   'paymentResult.fail': 'Payment failed',
+  'paymentResult.pending': 'Payment confirmation pending',
+  'paymentResult.pendingDesc':
+    'The payment result is not confirmed yet. Check again later or view your order. Please do not pay again.',
+  'paymentResult.checking': 'Checking payment result...',
+  'paymentResult.checkAgain': 'Check again',
+  'paymentResult.queryFailed':
+    'Unable to check the payment result. Try again or view your order. Please do not pay again.',
+  'paymentResult.opening': 'Opening payment result...',
+  'paymentResult.viewResult': 'View payment result',
+  'paymentResult.openFailed': 'Unable to open the result page. Please try opening it again.',
   'paymentResult.successDesc': 'Thank you for your purchase. We will ship it as soon as possible.',
   'paymentResult.failDesc':
     'Payment was not completed. Please try again later or use another method.',

@@ -266,15 +266,15 @@ export default defineMock({
 
   /**
    * Available payment methods for an order
-   * GET /apis/mp.api.ecommerce.halo.run/v1alpha1/payment-methods
+   * GET /apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/payment-methods
    */
-  '[GET]/apis/mp.api.ecommerce.halo.run/v1alpha1/payment-methods': () => {
+  '[GET]/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/{orderCode}/payment-methods': () => {
     return [
       {
         enabled: true,
         icon: 'string',
-        id: 0,
-        name: 'string',
+        id: 1,
+        name: '微信支付',
         provider: 'WECHAT_PAY',
         providerDisplayName: 'string',
         providerIconUrl: 'string',
@@ -337,8 +337,7 @@ export default defineMock({
   }) => {
     const session = sessionStatusMap.get(params.sessionCode);
     if (!session) {
-      // Return SUCCESS for unknown sessionCode values (for example, when entering the result page directly from URL params)
-      return 'SUCCESS';
+      return 'PENDING';
     }
 
     session.queryCount += 1;

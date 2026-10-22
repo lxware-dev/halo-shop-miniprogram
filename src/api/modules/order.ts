@@ -40,11 +40,11 @@ export const orderApi = {
     ),
 
   /**
-   * Fetch available payment methods in the current Mini Program environment
+   * Fetch available payment methods for the order and its sales channel
    */
-  getPaymentMethods: () => {
+  getPaymentMethods: (orderCode: string) => {
     return api.Get<PaymentMethodPublicResponse[]>(
-      `/apis/mp.api.ecommerce.halo.run/v1alpha1/payment-methods`,
+      `/apis/uc.api.ecommerce.halo.run/v1alpha1/orders/${orderCode}/payment-methods`,
     );
   },
 
