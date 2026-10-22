@@ -155,6 +155,8 @@ const zhCN = {
   'order.code': '订单编号',
   'order.createdAt': '创建时间',
   'order.paidAt': '支付时间',
+  'order.autoConfirmAt': '自动收货截止',
+  'order.confirmAt': '确认收货时间',
   'order.customerNotes': '买家备注',
   'order.notFound': '订单不存在',
   'order.productTotal': '商品总额',

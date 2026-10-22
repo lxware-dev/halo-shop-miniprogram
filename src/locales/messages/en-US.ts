@@ -155,6 +155,8 @@ const enUS = {
   'order.code': 'Order code',
   'order.createdAt': 'Created at',
   'order.paidAt': 'Paid at',
+  'order.autoConfirmAt': 'Receipt due',
+  'order.confirmAt': 'Confirmed at',
   'order.customerNotes': 'Buyer note',
   'order.notFound': 'Order not found',
   'order.productTotal': 'Items total',

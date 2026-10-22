@@ -1,5 +1,6 @@
 import type { OrderResponse, OrderItemResponse } from '@halo-dev/api-client';
 import { translate } from '@/locales';
+import { canConfirmOrderReceipt } from '@/helpers/order-receipt';
 
 /**
  * Whether the order requires logistics delivery
@@ -233,12 +234,7 @@ export function canViewLogistics(order: OrderResponse): boolean {
  * Whether to show the "Confirm Receipt" button
  */
 export function canConfirmReceive(order: OrderResponse): boolean {
-  return (
-    requiresShipping(order) &&
-    order.paymentStatus === 'PAID' &&
-    (order.fulfillmentStatus === 'PROCESSING' || order.fulfillmentStatus === 'FULFILLED') &&
-    order.status === 'OPEN'
-  );
+  return canConfirmOrderReceipt(order, requiresShipping(order));
 }
 
 /**

@@ -21,6 +21,7 @@ import {
 } from '@/helpers/order';
 import type { OrderResponse, OrderItemResponse, FulfillmentUcResponse } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
+import { getOrderReceiptTimes } from '@/helpers/order-receipt';
 
 const orderCode = ref('');
 const { t } = useI18n();
@@ -76,6 +77,7 @@ const statusInfo = computed(() => {
 });
 
 const orderRequiresShipping = computed(() => !!order.value && requiresShipping(order.value));
+const receiptTimes = computed(() => getOrderReceiptTimes(order.value, orderRequiresShipping.value));
 
 /**
  * Latest logistics update
@@ -420,6 +422,20 @@ function onCopyOrderCode() {
         <view v-if="order.paidAt" class="flex items-center">
           <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.paidAt') }}</text>
           <text class="text-xs text-slate-950 flex-1">{{ formatDate(order.paidAt) }}</text>
+        </view>
+
+        <view v-if="receiptTimes.autoConfirmAt" class="flex items-center">
+          <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.autoConfirmAt') }}</text>
+          <text class="text-xs text-slate-950 flex-1">
+            {{ formatDate(receiptTimes.autoConfirmAt) }}
+          </text>
+        </view>
+
+        <view v-if="receiptTimes.confirmAt" class="flex items-center">
+          <text class="text-xs text-slate-500 shrink-0 w-20">{{ $t('order.confirmAt') }}</text>
+          <text class="text-xs text-slate-950 flex-1">
+            {{ formatDate(receiptTimes.confirmAt) }}
+          </text>
         </view>
 
         <view v-if="order.customerNotes" class="flex items-start">
