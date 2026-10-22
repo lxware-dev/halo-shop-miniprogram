@@ -5,6 +5,7 @@ import type { ProductResponse } from '@halo-dev/api-client';
 import { formatImageUrlWithThumbnail } from '@/helpers/image';
 import { ICON_COLOR } from '@/helpers/icon';
 import { isExternalProduct } from '@/helpers/product';
+import { isInquiryProduct } from '@/helpers/inquiry';
 
 /**
  * showAddCart defaults to true; pass :show-add-cart="false" to hide the add-to-cart button
@@ -47,10 +48,23 @@ const emit = defineEmits<{
       </text>
 
       <view class="mt-auto flex items-center justify-between pt-0.5">
-        <AppPrice :price="product.minPrice ?? 0" :original-price="product.minOriginalPrice" />
+        <text v-if="isInquiryProduct(product)" class="text-brand text-sm font-bold">{{
+          $t('product.inquiryPrice')
+        }}</text>
+        <AppPrice
+          v-else-if="product.minPrice != null"
+          :price="product.minPrice"
+          :original-price="product.minOriginalPrice"
+        />
+        <text v-else class="text-slate-500 text-sm">{{ $t('product.viewDetails') }}</text>
 
         <view
-          v-if="showAddCart !== false && !isExternalProduct(product)"
+          v-if="
+            showAddCart !== false &&
+            !isExternalProduct(product) &&
+            !isInquiryProduct(product) &&
+            product.minPrice != null
+          "
           class="w-6 h-6 rounded-full flex p-1 items-center justify-center bg-brand/10 shrink-0"
           @tap.stop="emit('addCart', product)"
         >

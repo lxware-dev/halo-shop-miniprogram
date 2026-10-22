@@ -18,6 +18,8 @@ const props = withDefaults(
     fallbackCoverImage?: string;
     // currently displayed price (string, already formatted, e.g. "299.00")
     price?: string;
+    priceLabel?: string;
+    showQuantity?: boolean;
     // current variant stock (-1 means unlimited)
     stock?: number;
     // whether inventory is tracked
@@ -39,6 +41,8 @@ const props = withDefaults(
     coverImage: '',
     fallbackCoverImage: '',
     price: '0.00',
+    priceLabel: '',
+    showQuantity: true,
     stock: -1,
     trackInventory: false,
     selectedText: '',
@@ -170,8 +174,12 @@ function onQuantityBlur(e: any) {
 
         <view class="flex flex-col gap-1 flex-1 pt-2">
           <view class="flex items-baseline gap-0.5">
-            <text class="text-brand text-sm font-medium">{{ currencySymbol }}</text>
-            <text class="text-brand text-2xl font-bold leading-none">{{ price }}</text>
+            <text v-if="!priceLabel" class="text-brand text-sm font-medium">{{
+              currencySymbol
+            }}</text>
+            <text class="text-brand text-2xl font-bold leading-none">{{
+              priceLabel || price
+            }}</text>
           </view>
           <text v-if="trackInventory && stock >= 0" class="text-slate-500 text-xs">
             {{ t('sku.stock', { stock }) }}
@@ -209,7 +217,7 @@ function onQuantityBlur(e: any) {
             </view>
           </view>
 
-          <view class="flex items-center justify-between py-2">
+          <view v-if="showQuantity" class="flex items-center justify-between py-2">
             <text class="text-slate-950 text-base font-medium">{{ $t('sku.quantity') }}</text>
             <view class="flex items-center bg-slate-100 rounded-2 overflow-hidden">
               <view

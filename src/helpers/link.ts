@@ -5,7 +5,7 @@ const PHONE_LINK_REGEXP = /^tel:/i;
 
 export function openLinkTarget(
   target: string | null | undefined,
-  options?: { copyMessage?: string },
+  options?: { copyMessage?: string; onError?: () => void },
 ): boolean {
   const value = (target ?? '').trim();
   if (!value) {
@@ -13,7 +13,10 @@ export function openLinkTarget(
   }
 
   if (PHONE_LINK_REGEXP.test(value)) {
-    uni.makePhoneCall({ phoneNumber: value.replace(PHONE_LINK_REGEXP, '') });
+    uni.makePhoneCall({
+      phoneNumber: value.replace(PHONE_LINK_REGEXP, ''),
+      fail: options?.onError,
+    });
     return true;
   }
 
@@ -32,6 +35,7 @@ export function openLinkTarget(
       success: () => {
         uni.showToast({ title: options?.copyMessage ?? '链接已复制', icon: 'none' });
       },
+      fail: options?.onError,
     });
     return true;
   }

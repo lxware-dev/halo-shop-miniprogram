@@ -18,6 +18,7 @@ import { useInitialLoading } from '@/hooks/useInitialLoading';
 import { useScrollViewPullRefresh } from '@/hooks/usePullRefresh';
 import { useInfiniteQuery, useQuery } from '@/hooks/useRequest';
 import { isExternalProduct, openExternalProduct } from '@/helpers/product';
+import { isInquiryVariant } from '@/helpers/inquiry';
 
 const categoryId = ref<number | undefined>(undefined);
 const categoryName = ref('');
@@ -192,7 +193,7 @@ function handleAddToCart(product: ProductResponse) {
     return;
   }
   const variants = product.productVariants ?? [];
-  if (variants.length === 1 && variants[0].id) {
+  if (variants.length === 1 && variants[0].id && !isInquiryVariant(variants[0])) {
     addToCart(variants[0].id);
   } else {
     uni.navigateTo({ url: `/subpkg-product/detail/index?id=${product.id}` });

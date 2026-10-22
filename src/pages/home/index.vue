@@ -21,6 +21,7 @@ import { useCart } from '@/hooks/useCart';
 import { formatImageUrlWithThumbnail, formatShareImageUrl } from '@/helpers/image';
 import { ICON_COLOR } from '@/helpers/icon';
 import { isExternalProduct, openExternalProduct } from '@/helpers/product';
+import { isInquiryVariant } from '@/helpers/inquiry';
 import { useTabBar } from '@/composables/useTabBar';
 import { useI18n } from 'vue-i18n';
 
@@ -282,7 +283,7 @@ function handleAddToCart(product: ProductResponse) {
     return;
   }
   const variants = product.productVariants ?? [];
-  if (variants.length === 1 && variants[0].id) {
+  if (variants.length === 1 && variants[0].id && !isInquiryVariant(variants[0])) {
     addToCart(variants[0].id);
   } else {
     uni.navigateTo({ url: `/subpkg-product/detail/index?id=${product.id}` });

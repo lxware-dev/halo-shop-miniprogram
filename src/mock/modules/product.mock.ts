@@ -29,7 +29,12 @@ function generateVariant(
   sizeValue: string,
 ): ProductVariantResponse {
   // Price unit: yuan (floating point, consistent with the frontend)
-  const price = Number(faker.commerce.price({ min: 19.9, max: 999 }));
+  const pricingType =
+    productId % 10 === 0 || (productId !== 1 && productId % 10 === 1 && index === 1)
+      ? 'INQUIRY'
+      : 'FIXED';
+  const price =
+    pricingType === 'INQUIRY' ? 0 : Number(faker.commerce.price({ min: 19.9, max: 999 }));
   // Mock some variants as unavailable: about 20% have a non-PUBLISHED status, and about 15% have stock 0
   const statusRoll = faker.number.int({ min: 1, max: 10 });
   const status =
@@ -45,6 +50,7 @@ function generateVariant(
     productId,
     skuCode: `SKU-${productId}-${index}`,
     price,
+    pricingType,
     originalPrice: Number(
       (price * faker.number.float({ min: 1.1, max: 2.0, fractionDigits: 1 })).toFixed(2),
     ),
@@ -84,8 +90,11 @@ function generateProduct(id: number): ProductResponse {
       variants.push(generateVariant(id, variantIndex++, color, size));
     }
   }
-  const prices = variants.map((v) => v.price ?? 0);
-  const originalPrices = variants.map((v) => v.originalPrice ?? 0);
+  const pricedVariants = variants.filter(
+    (v) => v.status === 'PUBLISHED' && v.pricingType !== 'INQUIRY',
+  );
+  const prices = pricedVariants.map((v) => v.price ?? 0);
+  const originalPrices = pricedVariants.map((v) => v.originalPrice ?? 0);
 
   return {
     id,
@@ -98,10 +107,10 @@ function generateProduct(id: number): ProductResponse {
     handle: faker.helpers.slugify(faker.commerce.productName().toLowerCase()),
     status: 'PUBLISHED',
     productType: 'PHYSICAL',
-    minPrice: Math.min(...prices),
-    maxPrice: Math.max(...prices),
-    minOriginalPrice: Math.min(...originalPrices),
-    maxOriginalPrice: Math.max(...originalPrices),
+    minPrice: prices.length ? Math.min(...prices) : undefined,
+    maxPrice: prices.length ? Math.max(...prices) : undefined,
+    minOriginalPrice: originalPrices.length ? Math.min(...originalPrices) : undefined,
+    maxOriginalPrice: originalPrices.length ? Math.max(...originalPrices) : undefined,
     productVariants: variants,
     specDefinition: [
       {
@@ -181,7 +190,10 @@ export default defineMock({
 
     const total = filtered.length;
     const start = (page - 1) * size;
-    const items = filtered.slice(start, start + size);
+    // The real list response does not include SKU details.
+    const items = filtered
+      .slice(start, start + size)
+      .map((product) => ({ ...product, productVariants: [] }));
     const totalPages = Math.ceil(total / size);
     const currentPage = page;
 

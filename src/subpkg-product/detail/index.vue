@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
+import { onLoad, onUnload, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app';
 import { useI18n } from 'vue-i18n';
 import TIcon from '@tdesign/uniapp/icon/icon.vue';
 import AppLoadError from '@/components/common/AppLoadError.vue';
@@ -14,6 +14,9 @@ import { useCart } from '@/hooks/useCart';
 import { usePageShare } from '@/hooks/usePageShare';
 import { useQuery } from '@/hooks/useRequest';
 import SkuSelector from '@/components/business/SkuSelector.vue';
+import ProductInquirySheet from '@/components/business/ProductInquirySheet.vue';
+import { useProductInquiry } from '@/composables/useProductInquiry';
+import { isInquiryVariant } from '@/helpers/inquiry';
 import type {
   ProductResponse,
   ProductVariantResponse,
@@ -29,6 +32,14 @@ const productId = ref<number>(0);
 const appConfig = useAppConfig();
 const { contactServiceEnabled, currencySymbol } = appConfig.business;
 const { t } = useI18n();
+const inquiry = useProductInquiry();
+const {
+  visible: inquiryVisible,
+  loading: inquiryLoading,
+  error: inquiryError,
+  contacts: inquiryContacts,
+} = inquiry;
+onUnload(inquiry.dispose);
 
 function truncateShareText(text: string, maxLength: number) {
   const normalizedText = text.trim();
@@ -79,6 +90,9 @@ const selectedVariant = computed<ProductVariantResponse | null>(() => {
     null
   );
 });
+const isInquiry = computed(
+  () => product.value?.productType !== 'EXTERNAL' && isInquiryVariant(selectedVariant.value),
+);
 
 const displayPrice = computed(() => {
   if (selectedVariant.value?.price != null) {
@@ -278,6 +292,10 @@ async function handleAddToCart() {
     openExternalProduct(product.value);
     return;
   }
+  if (isInquiry.value) {
+    void handleInquiry();
+    return;
+  }
   if (addingToCart.value) {
     return;
   }
@@ -299,6 +317,10 @@ function handleBuyNow() {
     openExternalProduct(product.value);
     return;
   }
+  if (isInquiry.value) {
+    void handleInquiry();
+    return;
+  }
   if (!selectedVariant.value?.id) {
     uni.showToast({ title: t('product.chooseSpec'), icon: 'none' });
     return;
@@ -309,6 +331,11 @@ function handleBuyNow() {
   }
   showSpecPanel.value = false;
   uni.navigateTo({ url: targetUrl });
+}
+
+function handleInquiry() {
+  showSpecPanel.value = false;
+  return inquiry.inquire();
 }
 
 function previewImage(index: number) {
@@ -365,10 +392,10 @@ function onBannerChange(e: { detail: { current: number } }) {
     <view class="bg-white mt-2 px-4 pt-5 pb-2">
       <view class="flex items-baseline gap-2 mb-4">
         <text class="text-brand text-3xl font-bold leading-none tracking-[-1.5rpx]">
-          {{ currencySymbol }}{{ displayPrice }}
+          {{ isInquiry ? $t('product.inquiryPrice') : `${currencySymbol}${displayPrice}` }}
         </text>
         <text
-          v-if="originalPrice && originalPrice !== displayPrice"
+          v-if="!isInquiry && originalPrice && originalPrice !== displayPrice"
           class="text-slate-400 text-sm line-through"
         >
           {{ currencySymbol }}{{ originalPrice }}
@@ -442,6 +469,8 @@ function onBannerChange(e: { detail: { current: number } }) {
       :cover-image="selectedVariant?.imageUrl ?? ''"
       :fallback-cover-image="product.coverImageUrl ?? ''"
       :price="displayPrice"
+      :price-label="isInquiry ? t('product.inquiryPrice') : undefined"
+      :show-quantity="!isInquiry"
       :stock="selectedVariant?.stock ?? -1"
       :track-inventory="selectedVariant?.trackInventory ?? false"
       :selected-text="selectedSpecText"
@@ -452,7 +481,14 @@ function onBannerChange(e: { detail: { current: number } }) {
       @update:selected-specs="selectedSpecs = $event"
       @update:quantity="quantity = $event"
     >
-      <view class="flex gap-3">
+      <view
+        v-if="isInquiry"
+        class="flex items-center justify-center py-3.5 bg-brand rounded-full"
+        @tap="handleInquiry"
+      >
+        <text class="text-white text-base font-bold">{{ $t('product.inquiry') }}</text>
+      </view>
+      <view v-else class="flex gap-3">
         <view
           class="flex flex-1 items-center justify-center py-3.5 border border-solid border-brand rounded-full"
           :class="addingToCart ? 'opacity-60' : ''"
@@ -468,6 +504,16 @@ function onBannerChange(e: { detail: { current: number } }) {
         </view>
       </view>
     </SkuSelector>
+
+    <ProductInquirySheet
+      :visible="inquiryVisible"
+      :loading="inquiryLoading"
+      :error="inquiryError"
+      :contacts="inquiryContacts"
+      @close="inquiry.close"
+      @retry="inquiry.inquire"
+      @select="inquiry.openContact"
+    />
   </view>
 
   <view
@@ -512,6 +558,11 @@ function onBannerChange(e: { detail: { current: number } }) {
           @tap="openExternalProduct(product)"
         >
           <text class="text-white text-sm font-bold">{{ $t('product.goBuy') }}</text>
+        </view>
+      </view>
+      <view v-else-if="isInquiry" class="flex flex-1 rounded-full overflow-hidden">
+        <view class="flex flex-1 items-center justify-center py-3 bg-brand" @tap="handleInquiry">
+          <text class="text-white text-sm font-bold">{{ $t('product.inquiry') }}</text>
         </view>
       </view>
       <view v-else class="flex flex-1 rounded-full overflow-hidden">
